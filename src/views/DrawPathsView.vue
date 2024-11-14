@@ -5,7 +5,13 @@
     <p>Click on the grid squares to draw the path</p>
 
     <!-- Grid container with overlay for lines -->
-    <div class="grid-container">
+    <div
+      class="grid-container"
+      :style="{
+        gridTemplateColumns: `repeat(${cols}, 20px)`,
+        gridTemplateRows: `repeat(${rows}, 20px)`,
+      }"
+    >
       <!-- Lines -->
       <svg class="line-overlay" :width="cols * 22 - 2" :height="rows * 22 - 2">
         <line
@@ -19,7 +25,7 @@
           stroke-width="10"
         />
       </svg>
-      <!-- Grid -->
+      <!-- Grid cells -->
       <div
         v-for="(cell, index) in grid"
         :key="index"
@@ -39,13 +45,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router' // Import Vue Router if using for navigation
+import { useRouter } from 'vue-router'
 
 // Define the grid size
 const rows = 20
 const cols = 30
 
-// Coordinates
+// Coordinate
 interface Coordinate {
   x: number
   y: number
@@ -54,7 +60,7 @@ interface Coordinate {
 // Initialize the grid array with inactive cells
 const grid = ref(Array(rows * cols).fill({ active: false }))
 
-// Track the selected path coordinates with a defined type
+// Track the selected path coordinates
 const pathCoordinates = ref<Coordinate[]>([])
 
 // Computed property for line segments between each pair of consecutive points
@@ -68,10 +74,10 @@ const lineSegments = computed(() =>
 // Handle cell clicks to activate a path
 const toggleCell = (index: number) => {
   if (pathCoordinates.value.length === 0 || !grid.value[index].active) {
-    grid.value[index] = { active: true } // Activate cell
+    grid.value[index] = { active: true }
     pathCoordinates.value.push({
-      x: index % cols,
-      y: Math.floor(index / cols),
+      x: index % cols, // Calculate x position based on the column count
+      y: Math.floor(index / cols), // Calculate y position based on the column count
     })
   }
 }
@@ -82,7 +88,7 @@ const undo = () => {
     const lastPoint = pathCoordinates.value.pop()
     if (lastPoint) {
       const lastIndex = lastPoint.y * cols + lastPoint.x
-      grid.value[lastIndex] = { active: false } // Deactivate cell
+      grid.value[lastIndex] = { active: false }
     }
   }
 }
@@ -90,10 +96,10 @@ const undo = () => {
 // Reset the path and grid
 const resetPath = () => {
   pathCoordinates.value = []
-  grid.value = Array(rows * cols).fill({ active: false }) // Reset all cells to inactive
+  grid.value = Array(rows * cols).fill({ active: false })
 }
 
-// Complete the path drawing (you can add more logic here later)
+// Complete the path drawing
 const completePath = () => {
   console.log('Path completed with coordinates:', pathCoordinates.value)
   alert('Path is ready to send!')
@@ -102,7 +108,7 @@ const completePath = () => {
 // Go back function to navigate to the previous page
 const router = useRouter()
 const goBack = () => {
-  router.back() // Use router to navigate back
+  router.back()
 }
 </script>
 
