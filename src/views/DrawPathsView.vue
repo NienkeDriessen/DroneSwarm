@@ -8,19 +8,21 @@
     <div
       class="grid-container"
       :style="{
-        gridTemplateColumns: `repeat(${cols}, 20px)`,
-        gridTemplateRows: `repeat(${rows}, 20px)`,
+        gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
+        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+        width: `${gridWidth}px`,
+        height: `${gridHeight}px`,
       }"
     >
       <!-- Lines -->
-      <svg class="line-overlay" :width="cols * 22 - 2" :height="rows * 22 - 2">
+      <svg class="line-overlay" :width="gridWidth" :height="gridHeight">
         <line
           v-for="(segment, index) in lineSegments"
           :key="index"
-          :x1="segment.start.x * 22 + 11"
-          :y1="segment.start.y * 22 + 11"
-          :x2="segment.end.x * 22 + 11"
-          :y2="segment.end.y * 22 + 11"
+          :x1="segment.start.x * (cellSize + gap) + cellSize / 2"
+          :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
+          :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
+          :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
           stroke="#43b7ff"
           stroke-width="10"
         />
@@ -31,6 +33,7 @@
         :key="index"
         :class="['grid-cell', cell.active ? 'active' : '']"
         @click="toggleCell(index)"
+        :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
 
@@ -48,8 +51,19 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Define the grid size
-const rows = 20
-const cols = 30
+const rows = 8
+const cols = 15
+const maxGridWidth = 700
+const maxGridHeight = 500
+const gap = 2 // Gap size between cells
+
+// Calculate cell size based on the max dimensions and number of cells including gaps
+const cellSize = Math.min(
+  (maxGridWidth - gap * (cols - 1)) / cols,
+  (maxGridHeight - gap * (rows - 1)) / rows,
+)
+const gridWidth = cellSize * cols + gap * (cols - 1)
+const gridHeight = cellSize * rows + gap * (rows - 1)
 
 // Coordinate
 interface Coordinate {
