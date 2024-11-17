@@ -57,6 +57,9 @@ const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2 // Gap size between cells
 
+const stepsPerSegment = 10; // Number of intermediate points between each pair of points
+
+
 // Calculate cell size based on the max dimensions and number of cells including gaps
 const cellSize = Math.min(
   (maxGridWidth - gap * (cols - 1)) / cols,
@@ -76,6 +79,9 @@ const grid = ref(Array(rows * cols).fill({ active: false }))
 
 // Track the selected path coordinates
 const pathCoordinates = ref<Coordinate[]>([])
+
+// Create array for the waypoint generator itself
+const waypoints= ref<Coordinate[]>([])
 
 // Computed property for line segments between each pair of consecutive points
 const lineSegments = computed(() =>
@@ -113,11 +119,41 @@ const resetPath = () => {
   grid.value = Array(rows * cols).fill({ active: false })
 }
 
-// Complete the path drawing
+// Function to generate intermediate points between two coordinates
+const generateIntermediatePoints = (start: Coordinate, end: Coordinate, steps: number): Coordinate[] => {
+  const points: Coordinate[] = [];
+  for (let i = 1; i < steps; i++) {
+    points.push({
+      x: start.x + ((end.x - start.x) * i) / steps,
+      y: start.y + ((end.y - start.y) * i) / steps,
+    });
+  }
+  return points;
+};
+
+// Complete the path drawing with intermediate points
 const completePath = () => {
-  console.log('Path completed with coordinates:', pathCoordinates.value)
-  alert('Path is ready to send!')
-}
+
+  for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
+    const start = pathCoordinates.value[i];
+    const end = pathCoordinates.value[i + 1];
+
+    // Add the starting point
+    waypoints.value.push(start);
+
+    // Add intermediate points
+    waypoints.value.push(...generateIntermediatePoints(start, end, stepsPerSegment));
+  }
+
+  // Add the last point
+  if (pathCoordinates.value.length > 0) {
+    waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1]);
+  }
+
+  console.log('Path completed with coordinates:', pathCoordinates.value);
+  console.log('Path waypoints including intermediate points:', waypoints.value);
+  alert('Path and waypoints are ready!');
+};
 
 // Go back function to navigate to the previous page
 const router = useRouter()
