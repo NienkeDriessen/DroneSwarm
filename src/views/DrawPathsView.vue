@@ -57,8 +57,7 @@ const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2 // Gap size between cells
 
-const stepsPerSegment = 10; // Number of intermediate points between each pair of points
-
+const maxStepSize = 0.5 // the max length one step can have
 
 // Calculate cell size based on the max dimensions and number of cells including gaps
 const cellSize = Math.min(
@@ -81,35 +80,27 @@ const grid = ref(Array(rows * cols).fill({ active: false }))
 const pathCoordinates = ref<Coordinate[]>([])
 
 // Create array for the waypoint generator itself
-const waypoints= ref<Coordinate[]>([])
+const waypoints = ref<Coordinate[]>([])
 
 const lineSegments = computed(() => {
   const segments = pathCoordinates.value.slice(1).map((end, index) => ({
     start: pathCoordinates.value[index],
     end: end,
     intersecting: false, // Default to false
-  }));
+  }))
 
   // Check each segment for intersections with every other segment
   segments.forEach((segment, i) => {
     for (let j = 0; j < i; j++) {
-      if (
-        doLinesIntersect(
-          segment.start,
-          segment.end,
-          segments[j].start,
-          segments[j].end
-        )
-      ) {
-        segment.intersecting = true;
-        segments[j].intersecting = true;
+      if (doLinesIntersect(segment.start, segment.end, segments[j].start, segments[j].end)) {
+        segment.intersecting = true
+        segments[j].intersecting = true
       }
     }
-  });
+  })
 
-  return segments;
-});
-
+  return segments
+})
 
 // Handle cell clicks to activate a path
 const toggleCell = (index: number) => {
@@ -140,83 +131,91 @@ const resetPath = () => {
 }
 
 // Interpolation to generate intermediate points between 2 points (like np.linspace)
-const generateIntermediatePoints = (start: Coordinate, end: Coordinate, steps: number): Coordinate[] => {
-  const points: Coordinate[] = [];
+const generateIntermediatePoints = (
+  start: Coordinate,
+  end: Coordinate,
+  steps: number,
+): Coordinate[] => {
+  const points: Coordinate[] = []
   for (let i = 1; i < steps; i++) {
     points.push({
       x: start.x + ((end.x - start.x) * i) / steps,
       y: start.y + ((end.y - start.y) * i) / steps,
-    });
+    })
   }
-  return points;
-};
-
+  return points
+}
 
 // Check if the points in PathCoordinates intersect at any point
-const doLinesIntersect = (a1: Coordinate, a2: Coordinate, b1: Coordinate, b2: Coordinate): boolean => {
-  
+const doLinesIntersect = (
+  a1: Coordinate,
+  a2: Coordinate,
+  b1: Coordinate,
+  b2: Coordinate,
+): boolean => {
   // 2d cross prod
-  const cross = (v1: Coordinate, v2: Coordinate) => v1.x * v2.y - v1.y * v2.x;
+  const cross = (v1: Coordinate, v2: Coordinate) => v1.x * v2.y - v1.y * v2.x
 
   // Just element-wise operator for ease
   const subtract = (v1: Coordinate, v2: Coordinate) => ({
     x: v1.x - v2.x,
     y: v1.y - v2.y,
-  });
+  })
 
-  const d1 = subtract(a2, a1);
-  const d2 = subtract(b2, b1);
-  const delta = subtract(b1, a1);
+  const d1 = subtract(a2, a1)
+  const d2 = subtract(b2, b1)
+  const delta = subtract(b1, a1)
 
-  const cross1 = cross(delta, d1);
-  const cross2 = cross(delta, d2);
-  const denominator = cross(d1, d2);
+  const cross1 = cross(delta, d1)
+  const cross2 = cross(delta, d2)
+  const denominator = cross(d1, d2)
 
   if (denominator === 0) {
-    return false; // Lines are parallel
+    return false // Lines are parallel
   }
 
-  const t = cross2 / denominator;
-  const u = cross1 / denominator;
+  const t = cross2 / denominator
+  const u = cross1 / denominator
 
-  return t > 0 && t < 1 && u > 0 && u < 1; // Check if lines intersect within segment bounds
-};
-
+  return t > 0 && t < 1 && u > 0 && u < 1 // Check if lines intersect within segment bounds
+}
 
 const completePath = () => {
-  const hasIntersections = lineSegments.value.some(
-    (segment) => segment.intersecting
-  );
+  const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
 
   // Handle intersection by asking user to undo or start from scratch
   if (hasIntersections) {
-    alert('Path contains intersecting lines. Please fix them before proceeding.');
-    return;
+    alert('Path contains intersecting lines. Please fix them before proceeding.')
+    return
   }
 
   // Generate waypoints if no intersections
-  waypoints.value = [];
+  waypoints.value = []
   for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
-    const start = pathCoordinates.value[i];
-    const end = pathCoordinates.value[i + 1];
+    const start = pathCoordinates.value[i]
+    const end = pathCoordinates.value[i + 1]
+
+    // Calculate distance between points
+    const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2))
+    // Dynamically determine the number of steps
+    const steps = Math.max(1, Math.ceil(distance / maxStepSize)) // At least 1 step
 
     // Add the starting point
-    waypoints.value.push(start);
+    waypoints.value.push(start)
 
     // Add intermediate points
-    waypoints.value.push(...generateIntermediatePoints(start, end, stepsPerSegment));
+    waypoints.value.push(...generateIntermediatePoints(start, end, steps))
   }
 
   // Add the last point
   if (pathCoordinates.value.length > 0) {
-    waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1]);
+    waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1])
   }
 
-  console.log('Path completed with coordinates:', pathCoordinates.value);
-  console.log('Path waypoints including intermediate points:', waypoints.value);
-  alert('Path and waypoints are ready!');
-};
-
+  console.log('Path completed with coordinates:', pathCoordinates.value)
+  console.log('Path waypoints including intermediate points:', waypoints.value)
+  alert('Path and waypoints are ready!')
+}
 
 // Go back function to navigate to the previous page
 const router = useRouter()
