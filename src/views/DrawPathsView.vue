@@ -49,6 +49,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+
+// Moved geometry definition and tools to a separate file for clarity
 import { doLinesIntersect, generateIntermediatePoints, type Coordinate } from '../assets/GeometryTools'
 
 // Define the grid size
@@ -67,7 +69,6 @@ const cellSize = Math.min(
 )
 const gridWidth = cellSize * cols + gap * (cols - 1)
 const gridHeight = cellSize * rows + gap * (rows - 1)
-
 
 // Initialize the grid array with inactive cells
 const grid = ref(Array(rows * cols).fill({ active: false }))
@@ -125,7 +126,6 @@ const resetPath = () => {
   pathCoordinates.value = []
   grid.value = Array(rows * cols).fill({ active: false })
 }
-
 
 const completePath = () => {
   const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
