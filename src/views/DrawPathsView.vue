@@ -49,6 +49,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { doLinesIntersect, generateIntermediatePoints, type Coordinate } from '../assets/GeometryTools'
 
 // Define the grid size
 const rows = 8
@@ -67,11 +68,6 @@ const cellSize = Math.min(
 const gridWidth = cellSize * cols + gap * (cols - 1)
 const gridHeight = cellSize * rows + gap * (rows - 1)
 
-// Coordinate
-interface Coordinate {
-  x: number
-  y: number
-}
 
 // Initialize the grid array with inactive cells
 const grid = ref(Array(rows * cols).fill({ active: false }))
@@ -130,55 +126,6 @@ const resetPath = () => {
   grid.value = Array(rows * cols).fill({ active: false })
 }
 
-// Interpolation to generate intermediate points between 2 points (like np.linspace)
-const generateIntermediatePoints = (
-  start: Coordinate,
-  end: Coordinate,
-  steps: number,
-): Coordinate[] => {
-  const points: Coordinate[] = []
-  for (let i = 1; i < steps; i++) {
-    points.push({
-      x: start.x + ((end.x - start.x) * i) / steps,
-      y: start.y + ((end.y - start.y) * i) / steps,
-    })
-  }
-  return points
-}
-
-// Check if the points in PathCoordinates intersect at any point
-const doLinesIntersect = (
-  a1: Coordinate,
-  a2: Coordinate,
-  b1: Coordinate,
-  b2: Coordinate,
-): boolean => {
-  // 2d cross prod
-  const cross = (v1: Coordinate, v2: Coordinate) => v1.x * v2.y - v1.y * v2.x
-
-  // Just element-wise operator for ease
-  const subtract = (v1: Coordinate, v2: Coordinate) => ({
-    x: v1.x - v2.x,
-    y: v1.y - v2.y,
-  })
-
-  const d1 = subtract(a2, a1)
-  const d2 = subtract(b2, b1)
-  const delta = subtract(b1, a1)
-
-  const cross1 = cross(delta, d1)
-  const cross2 = cross(delta, d2)
-  const denominator = cross(d1, d2)
-
-  if (denominator === 0) {
-    return false // Lines are parallel
-  }
-
-  const t = cross2 / denominator
-  const u = cross1 / denominator
-
-  return t > 0 && t < 1 && u > 0 && u < 1 // Check if lines intersect within segment bounds
-}
 
 const completePath = () => {
   const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
