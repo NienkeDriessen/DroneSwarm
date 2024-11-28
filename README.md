@@ -1,4 +1,5 @@
 # DroneSwarm
+
 App for OnTour drone swarm
 
 ## Project Setup
@@ -11,4 +12,13 @@ npm install
 
 ```sh
 npm run dev
+```
+
+### For running the dummy backend:
+
+(new cmd)
+
+```sh
+cd dummyEndSide
+python server.py
 ```
