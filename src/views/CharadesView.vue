@@ -37,8 +37,43 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const sendShapePath = (path: number[][]) => {
-  console.log('Sending shape path to drones:', path)
+// Helper function for generating intermediate points
+function generateIntermediatePoints(
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  steps: number,
+) {
+  const points = []
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps
+    points.push({
+      x: start.x + (end.x - start.x) * t,
+      y: start.y + (end.y - start.y) * t,
+    })
+  }
+  return points
+}
+
+const sendShapePath = (path: { x: number; y: number }[]) => {
+  const maxStepSize = 0.2 // Adjust step size for smoothness
+  const waypoints = []
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const start = path[i]
+    const end = path[i + 1]
+
+    const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2))
+    const steps = Math.max(1, Math.ceil(distance / maxStepSize)) // At least 1 step
+
+    waypoints.push(start)
+    waypoints.push(...generateIntermediatePoints(start, end, steps))
+  }
+
+  if (path.length > 0) {
+    waypoints.push(path[path.length - 1])
+  }
+
+  console.log('Sending smoothed shape path to drones:', waypoints)
 }
 
 const loadNewGroup = () => {
@@ -58,8 +93,11 @@ const loadNewGroup = () => {
   isCorrect.value = false
   message.value = ''
 
+  // Convert the selected shape's path to {x, y} format
+  const convertedPath = currentShapes[correctAnswerIndex.value].path.map(([x, y]) => ({ x, y }))
+
   // Send shape path of the randomly chosen shape
-  sendShapePath(currentShapes[correctAnswerIndex.value].path)
+  sendShapePath(convertedPath)
 }
 
 const checkAnswer = (index: number) => {
