@@ -21,6 +21,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { groups, shapesData, type ShapeName } from '../assets/shapesData'
 import ShapeButtonGrid from '../components/CharadesButtonGrid.vue'
+import axios from 'axios'
 
 // Define the shape type explicitly
 type Shape = {
@@ -36,6 +37,8 @@ const isCorrect = ref(false)
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
+
+const droneEndpoint = 'http://drone-server/api/drones' // Replace with actual endpoint
 
 // Helper function for generating intermediate points
 function generateIntermediatePoints(
@@ -54,9 +57,26 @@ function generateIntermediatePoints(
   return points
 }
 
+// Helper function to create a 20-item array (one index per drone)
+const createDroneArray = (updates: { index: number; coordinate: { x: number; y: number } }[]) => {
+  // Create an initial array with 20 `null` values
+  const dronesArray = Array(20).fill(null)
+
+  // Update the array based on the provided updates
+  updates.forEach(({ index, coordinate }) => {
+    if (index >= 0 && index < dronesArray.length) {
+      dronesArray[index] = coordinate
+    } else {
+      console.warn(`Index ${index} is out of bounds. Skipping update.`)
+    }
+  })
+
+  return dronesArray
+}
+
 const sendShapePath = (path: { x: number; y: number }[]) => {
   const maxStepSize = 0.2 // Adjust step size for smoothness
-  const waypoints = []
+  const waypoints: { x: number; y: number }[] = []
 
   for (let i = 0; i < path.length - 1; i++) {
     const start = path[i]
@@ -74,6 +94,33 @@ const sendShapePath = (path: { x: number; y: number }[]) => {
   }
 
   console.log('Sending smoothed shape path to drones:', waypoints)
+
+  let stepIndex = 0
+  const intervalId = setInterval(async () => {
+    if (stepIndex >= waypoints.length) {
+      clearInterval(intervalId)
+      console.log('All waypoints sent!')
+      return
+    }
+
+    const currentWaypoint = waypoints[stepIndex]
+
+    const updates = [
+      { index: 0, coordinate: currentWaypoint }, // Drone 0 gets the current waypoint
+    ]
+
+    const dronesArray = createDroneArray(updates)
+
+    try {
+      // Send data to the endpoint
+      //await axios.post(droneEndpoint, dronesArray)
+      console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
+    } catch (error) {
+      console.error('Error sending data to drone endpoint:', error)
+    }
+
+    stepIndex++
+  }, 1000) // Send a coordinate every second
 }
 
 const loadNewGroup = () => {
