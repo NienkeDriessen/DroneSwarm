@@ -13,25 +13,34 @@
     </div>
 
     <!-- Drone Status Overview -->
-    <div class="drone-status">
-      <div
-        v-for="drone in drones"
-        :key="drone.id"
-        :class="['drone-box', { 'unavailable': !drone.available, 'available': drone.available }]"
-      >
-        <div>Drone {{ drone.id }}</div>
-        <div v-if="drone.available">Available</div>
-        <div v-else>Unavailable</div>
-        <div v-if="drone.assignedPoints && drone.assignedPoints.length > 0">
-          <strong>Assigned Points:</strong>
-          <ul>
-            <li v-for="point in drone.assignedPoints" :key="`${point.x}-${point.y}`">
-              ({{ point.x }}, {{ point.y }})
-            </li>
-          </ul>
+    <div class="drone-status-container">
+      <h3>Drone Status</h3>
+      <div class="drone-status">
+        <div
+          v-for="drone in drones"
+          :key="drone.id"
+          :class="['drone-box', { 'unavailable': !drone.available, 'available': drone.available }]"
+        >
+          <div class="drone-header">
+            <span>Drone {{ drone.id }}</span>
+            <span
+              :class="['status-indicator', { 'available': drone.available, 'unavailable': !drone.available }]"
+            ></span>
+          </div>
+          <div class="drone-status-text" v-if="drone.available">Available</div>
+          <div class="drone-status-text" v-else>Unavailable</div>
+          <div v-if="drone.assignedPoints && drone.assignedPoints.length > 0" class="assigned-points">
+            <strong>Assigned Points:</strong>
+            <ul>
+              <li v-for="point in drone.assignedPoints" :key="`${point.x}-${point.y}`">
+                ({{ point.x }}, {{ point.y }})
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
+
 
     <!-- Grid container with overlay for lines -->
     <div
@@ -88,13 +97,16 @@ interface Drone {
   assignedPoints: Coordinate[];
 }
 
-
+//Dummy drones available
 const drones = ref<Drone[]>([
   { id: 1, available: true, assignedPoints: [] },
   { id: 2, available: true, assignedPoints: [] },
-  { id: 3, available: false, assignedPoints: [] },
+  { id: 3, available: true, assignedPoints: [] },
   { id: 4, available: true, assignedPoints: [] },
   { id: 5, available: false, assignedPoints: [] },
+  { id: 6, available: false, assignedPoints: [] },
+  { id: 7, available: false, assignedPoints: [] },
+  { id: 8, available: false, assignedPoints: [] },
 ]);
 
 // Helper to count available drones
@@ -102,8 +114,6 @@ const availableDronesCount = computed(() =>
   drones.value.filter((drone) => drone.available).length
 );
 
-// Ensure the max points allowed equals the number of available drones
-const maxPoints = computed(() => availableDronesCount.value);
 
 
 // Define the grid size
@@ -111,7 +121,7 @@ const rows = 8
 const cols = 15
 const maxGridWidth = 700
 const maxGridHeight = 500
-const gap = 2 // Gap size between cells
+const gap = 1 // Gap size between cells
 
 const maxStepSize = 0.5 // the max length one step can have
 
@@ -181,22 +191,31 @@ const toggleCell = (index: number) => {
       });
     }
   } else if (currentMode.value === 'points') {
-// Check if the maximum number of drones has been reached
-      if (dronePoints.value.length > maxPoints.value) {
+    const availableDronesCount = drones.value.filter((drone) => drone.available).length;
+
+    // Check if the cell is already assigned
+    const cellIndex = dronePoints.value.findIndex(
+      (dp) => dp.point.x === index % cols && dp.point.y === Math.floor(index / cols)
+    );
+
+    if (cellIndex !== -1) {
+      // Deactivate the cell and remove its assignment
+      grid.value[index] = { active: false };
+      dronePoints.value.splice(cellIndex, 1);
+    } else if (!grid.value[index].active) {
+      // Check if adding another point exceeds the available drones
+      if (dronePoints.value.length >= availableDronesCount) {
         alert('You cannot assign more points than the number of available drones!');
         return;
       }
 
-    // Add a point to the dronePoints container if not already active
-      if (!grid.value[index].active) {
-        grid.value[index] = { active: true };
-
+      // Activate the cell and assign it to the next available drone
+      grid.value[index] = { active: true };
       const point = {
         x: index % cols,
         y: Math.floor(index / cols),
       };
 
-      // Assign the point to the next available drone
       const availableDrone = drones.value[dronePoints.value.length];
       if (availableDrone && availableDrone.available) {
         dronePoints.value.push({ droneId: availableDrone.id, point });
@@ -208,11 +227,22 @@ const toggleCell = (index: number) => {
 
 // Undo the last cell in the path
 const undo = () => {
-  if (pathCoordinates.value.length > 0) {
-    const lastPoint = pathCoordinates.value.pop()
-    if (lastPoint) {
-      const lastIndex = lastPoint.y * cols + lastPoint.x
-      grid.value[lastIndex] = { active: false }
+  if (currentMode.value === 'path') {
+    if (pathCoordinates.value.length > 0) {
+      const lastPoint = pathCoordinates.value.pop()
+      if (lastPoint) {
+        const lastIndex = lastPoint.y * cols + lastPoint.x
+        grid.value[lastIndex] = { active: false }
+      }
+    }
+  }
+  else if (currentMode.value === 'points') {
+    if (dronePoints.value.length > 0) {
+      const lastPoint = dronePoints.value.pop()
+      if (lastPoint) {
+        const lastIndex = lastPoint.point.y * cols + lastPoint.point.x
+        grid.value[lastIndex] = { active: false }
+      }
     }
   }
 }
@@ -221,6 +251,7 @@ const undo = () => {
 const resetPath = () => {
   pathCoordinates.value = [];
   dronePoints.value = [];
+  waypoints.value = [];
   grid.value = Array(rows * cols).fill({ active: false })
 }
 
@@ -264,7 +295,7 @@ const completePath = () => {
 
   } else if (currentMode.value === 'points') {
     // Validate points mode (ensure all points are within the drone limit)
-    if (dronePoints.value.length > maxPoints.value) {
+    if (dronePoints.value.length > availableDronesCount.value) {
       alert('You have assigned more points than the number of available drones!');
       return;
     }
@@ -385,46 +416,108 @@ const goBack = () => {
   align-self: flex-start;
 }
 
-.drone-status-overview {
-  margin-top: 1rem;
+/* Container for the Drone Status Overview */
+.drone-status-container {
+  padding: 20px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  max-width: 90%;
+  margin: 20px auto;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Title */
+.drone-status-container h3 {
   text-align: center;
+  color: #333;
+  font-family: 'Arial', sans-serif;
+  margin-bottom: 15px;
 }
 
-.drone-list {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+/* Drone Status Grid */
+.drone-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Dynamic columns */
+  grid-auto-rows: auto; /* Auto-adjust height */
+  grid-auto-flow: column; /* Fill rows first, then columns */
+  gap: 15px;
 }
 
-.drone-item {
+/* Individual Drone Box */
+.drone-box {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #fff;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.drone-box.available {
+  border: 2px solid #4caf50;
+  background-color: #e8f5e9;
+}
+
+.drone-box.unavailable {
+  border: 2px solid #f44336;
+  background-color: #ffebee;
+}
+
+.drone-box:hover {
+  transform: scale(1.03);
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Drone Header */
+.drone-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100px;
-}
-
-.drone-item.available {
-  background-color: #e8fce8;
-}
-
-.drone-item.unavailable {
-  background-color: #fde8e8;
-}
-
-.drone-status {
-  margin-top: 0.5rem;
   font-weight: bold;
+  font-size: 16px;
+  color: #333;
 }
 
-.drone-status.green {
-  color: green;
+/* Status Indicator */
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
 }
 
-.drone-status.red {
-  color: red;
+.status-indicator.available {
+  background-color: #4caf50;
+}
+
+.status-indicator.unavailable {
+  background-color: #f44336;
+}
+
+/* Drone Status Text */
+.drone-status-text {
+  font-size: 14px;
+  color: #555;
+}
+
+/* Assigned Points List */
+.assigned-points {
+  background-color: #f1f1f1;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.assigned-points ul {
+  padding-left: 20px;
+  margin: 5px 0;
+}
+
+.assigned-points li {
+  list-style: square;
+  font-size: 12px;
+  color: #333;
 }
 </style>
