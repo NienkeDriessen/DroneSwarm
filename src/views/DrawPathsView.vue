@@ -4,6 +4,15 @@
     <h1>Create Your Path</h1>
     <p>Click on the grid squares to draw the path</p>
 
+    <div class="mode-toggle">
+      <label for="mode">Mode:</label>
+      <select id="mode" v-model="currentMode">
+        <option value="path">Path Drawing</option>
+        <option value="points">Point Assignment</option>
+      </select>
+    </div>
+
+
     <!-- Grid container with overlay for lines -->
     <div
       class="grid-container"
@@ -32,9 +41,11 @@
         v-for="(cell, index) in grid"
         :key="index"
         :class="['grid-cell', cell.active ? 'active' : '']"
+        :data-drone-id="currentMode === 'points' ? getDroneId(index) : ''"
         @click="toggleCell(index)"
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
+
     </div>
 
     <!-- Control buttons -->
@@ -47,9 +58,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { doLinesIntersect, generateIntermediatePoints, type Coordinate } from '../assets/GeometryTools'
+
+
+
+
 
 // Define the grid size
 const rows = 8
@@ -98,16 +113,53 @@ const lineSegments = computed(() => {
   return segments
 })
 
-// Handle cell clicks to activate a path
-const toggleCell = (index: number) => {
-  if (pathCoordinates.value.length === 0 || !grid.value[index].active) {
-    grid.value[index] = { active: true }
-    pathCoordinates.value.push({
-      x: index % cols, // Calculate x from  the col count
-      y: Math.floor(index / cols), // Calculate y based on the col count
-    })
+const currentMode = ref('path'); // Default to Path Drawing mode
+
+// Watch for mode changes and reset the grid
+watch(currentMode, (newMode, oldMode) => {
+  if (newMode !== oldMode) {
+    resetPath();
   }
-}
+});
+
+const dronePoints = ref<{ point: Coordinate, droneId: number }[]>([]);
+
+const getDroneId = (index: number) => {
+  const point = { x: index % cols, y: Math.floor(index / cols) };
+  const drone = dronePoints.value.find((dp) => dp.point.x === point.x && dp.point.y === point.y);
+  return drone ? drone.droneId : '';
+};
+
+const toggleCell = (index: number) => {
+  if (currentMode.value === 'path') {
+    // Existing path drawing logic
+    if (pathCoordinates.value.length === 0 || !grid.value[index].active) {
+      grid.value[index] = { active: true };
+      pathCoordinates.value.push({
+        x: index % cols,
+        y: Math.floor(index / cols),
+      });
+    }
+  } else if (currentMode.value === 'points') {
+    // New logic for Point Assignment mode
+    const point = { x: index % cols, y: Math.floor(index / cols) };
+    const existingIndex = dronePoints.value.findIndex(
+      (dp) => dp.point.x === point.x && dp.point.y === point.y
+    );
+
+    if (existingIndex === -1) {
+      // Assign next available drone ID
+      const nextDroneId = dronePoints.value.length + 1;
+      dronePoints.value.push({ point, droneId: nextDroneId });
+      grid.value[index] = { active: true };
+    } else {
+      // Deselect point if already selected
+      dronePoints.value.splice(existingIndex, 1);
+      grid.value[index] = { active: false };
+    }
+  }
+};
+
 
 // Undo the last cell in the path
 const undo = () => {
@@ -122,46 +174,53 @@ const undo = () => {
 
 // Reset the path and grid
 const resetPath = () => {
-  pathCoordinates.value = []
+  pathCoordinates.value = [];
+  dronePoints.value = [];
   grid.value = Array(rows * cols).fill({ active: false })
 }
 
 
 const completePath = () => {
-  const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
+  if (currentMode.value === 'path') {
 
-  // Handle intersection by asking user to undo or start from scratch
-  if (hasIntersections) {
-    alert('Path contains intersecting lines. Please fix them before proceeding.')
-    return
+    const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
+
+    // Handle intersection by asking user to undo or start from scratch
+    if (hasIntersections) {
+      alert('Path contains intersecting lines. Please fix them before proceeding.')
+      return;
+    }
+
+    // Generate waypoints if no intersections
+    waypoints.value = []
+    for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
+      const start = pathCoordinates.value[i]
+      const end = pathCoordinates.value[i + 1]
+
+      // Calculate distance between points
+      const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2))
+      // Dynamically determine the number of steps
+      const steps = Math.max(1, Math.ceil(distance / maxStepSize)) // At least 1 step
+
+      // Add the starting point
+      waypoints.value.push(start)
+
+      // Add intermediate points
+      waypoints.value.push(...generateIntermediatePoints(start, end, steps))
+    }
+
+    // Add the last point
+    if (pathCoordinates.value.length > 0) {
+      waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1])
+    }
+
+    console.log('Path completed with coordinates:', pathCoordinates.value)
+    console.log('Path waypoints including intermediate points:', waypoints.value)
+    alert('Path and waypoints are ready!')
+  } else if (currentMode.value === 'points') {
+    console.log('Points assigned to drones:', dronePoints.value);
+    alert('Drone assignments completed!');
   }
-
-  // Generate waypoints if no intersections
-  waypoints.value = []
-  for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
-    const start = pathCoordinates.value[i]
-    const end = pathCoordinates.value[i + 1]
-
-    // Calculate distance between points
-    const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2))
-    // Dynamically determine the number of steps
-    const steps = Math.max(1, Math.ceil(distance / maxStepSize)) // At least 1 step
-
-    // Add the starting point
-    waypoints.value.push(start)
-
-    // Add intermediate points
-    waypoints.value.push(...generateIntermediatePoints(start, end, steps))
-  }
-
-  // Add the last point
-  if (pathCoordinates.value.length > 0) {
-    waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1])
-  }
-
-  console.log('Path completed with coordinates:', pathCoordinates.value)
-  console.log('Path waypoints including intermediate points:', waypoints.value)
-  alert('Path and waypoints are ready!')
 }
 
 // Go back function to navigate to the previous page
@@ -198,6 +257,14 @@ const goBack = () => {
 
 .grid-cell.active {
   background-color: #43b7ff; /* Active cell color */
+}
+
+.grid-cell::after {
+  content: attr(data-drone-id);
+  display: block;
+  text-align: center;
+  font-size: 1.5rem;
+  color: black;
 }
 
 /* Overlay for lines */
