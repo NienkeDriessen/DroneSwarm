@@ -334,7 +334,6 @@ const completePath = () => {
   }
 };
 
-
 // Go back function to navigate to the previous page
 const router = useRouter()
 const goBack = () => {
