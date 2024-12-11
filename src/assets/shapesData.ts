@@ -50,11 +50,15 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
   heart: {
     image: 'path/to/square_image.png',
     path: [
-      [0, 0, 0],
-      [0, 1, 0],
-      [1, 1, 0],
-      [1, 0, 0],
-      [0, 0, 0],
+      [0, 0, 0.8],
+      [0, -0.4, 1.2],
+      [0, -0.6, 1.6],
+      [0, -0.3, 1.8],
+      [0, 0, 1.4],
+      [0, -0.3, 1.8],
+      [0, -0.6, 1.6],
+      [0, -0.4, 1.2],
+      [0, 0, 0.8],
     ],
   },
   apple: {

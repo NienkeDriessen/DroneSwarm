@@ -38,7 +38,7 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const droneEndpoint = 'http://192.168.1.142:3000/api/drones' // Replace with actual endpoint
+const droneEndpoint = 'http://192.168.1.143:3000/api/drones' // Replace with actual endpoint
 
 // Helper function for generating intermediate points
 function generateIntermediatePoints(
