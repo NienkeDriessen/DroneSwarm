@@ -38,7 +38,7 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const droneEndpoint = 'http://127.0.0.1:3000/api/drones' // Replace with actual endpoint
+const droneEndpoint = 'http://192.168.1.143:3000/api/drones' // Replace with actual endpoint
 
 // Helper function for generating intermediate points
 function generateIntermediatePoints(
@@ -135,6 +135,8 @@ const loadNewGroup = () => {
 
   // Choose a random correct index
   correctAnswerIndex.value = Math.floor(Math.random() * currentShapes.length)
+  // For testing purposes just do the first one
+  correctAnswerIndex.value = 0
   console.log('correct one is: ' + currentShapes[correctAnswerIndex.value].name)
   selectedButton.value = -1
   isCorrect.value = false

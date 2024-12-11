@@ -1,8 +1,8 @@
 export type ShapeName = 'line' | 'triangle' | 'circle' | 'square' | 'heart' | 'apple' | 'moon'
 
 export const groups: ShapeName[][] = [
-  ['line', 'triangle', 'circle', 'square'], // Group 1
-  ['heart', 'apple', 'circle', 'moon'], // Group 2
+  ['triangle', 'line', 'circle', 'square'], // Group 1
+  ['triangle', 'apple', 'heart', 'moon'], // Group 2
 ]
 
 export const shapesData: Record<ShapeName, { image: string; path: number[][] }> = {
@@ -50,11 +50,15 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
   heart: {
     image: 'path/to/square_image.png',
     path: [
-      [0, 0, 0],
-      [0, 1, 0],
-      [1, 1, 0],
-      [1, 0, 0],
-      [0, 0, 0],
+      [0, 0, 0.8],
+      [0, -0.4, 1.2],
+      [0, -0.6, 1.6],
+      [0, -0.3, 1.8],
+      [0, 0, 1.4],
+      [0, -0.3, 1.8],
+      [0, -0.6, 1.6],
+      [0, -0.4, 1.2],
+      [0, 0, 0.8],
     ],
   },
   apple: {
