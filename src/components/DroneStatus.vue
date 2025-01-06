@@ -29,13 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { type Coordinate } from '../assets/GeometryTools'
 
-interface Drone {
-  id: number;
-  available: boolean;
-  assignedPoints: Coordinate[];
-}
+import Drone from '../models/Drone'
 
 defineProps<{
   drones: Drone[]

@@ -64,23 +64,18 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { doLinesIntersect, generateIntermediatePoints, type Coordinate } from '../assets/GeometryTools'
 import DroneStatus from '../components/DroneStatus.vue'
+import Drone from '../models/Drone'
 
-interface Drone {
-  id: number;
-  available: boolean;
-  assignedPoints: Coordinate[];
-}
 
-//Dummy drones available
 const drones = ref<Drone[]>([
-  { id: 1, available: true, assignedPoints: [] },
-  { id: 2, available: true, assignedPoints: [] },
-  { id: 3, available: true, assignedPoints: [] },
-  { id: 4, available: true, assignedPoints: [] },
-  { id: 5, available: false, assignedPoints: [] },
-  { id: 6, available: false, assignedPoints: [] },
-  { id: 7, available: false, assignedPoints: [] },
-  { id: 8, available: false, assignedPoints: [] },
+  new Drone(1, true),
+  new Drone(2, true),
+  new Drone(3, true),
+  new Drone(4, true),
+  new Drone(5, false),
+  new Drone(6, false),
+  new Drone(7, false),
+  new Drone(8, false),
 ]);
 
 // Helper to count available drones
@@ -164,7 +159,12 @@ const toggleCell = (index: number) => {
       });
     }
   } else if (currentMode.value === 'points') {
-    const availableDronesCount = drones.value.filter((drone) => drone.available).length;
+    const availableDrones = drones.value.filter(drone => drone.available);
+    const usedDroneIds = new Set(dronePoints.value.map(dp => dp.droneId));
+    const availableDroneIds = availableDrones
+      .map(drone => drone.id)
+      .filter(id => !usedDroneIds.has(id))
+      .sort((a, b) => a - b);
 
     // Check if the cell is already assigned
     const cellIndex = dronePoints.value.findIndex(
@@ -177,21 +177,21 @@ const toggleCell = (index: number) => {
       dronePoints.value.splice(cellIndex, 1);
     } else if (!grid.value[index].active) {
       // Check if adding another point exceeds the available drones
-      if (dronePoints.value.length >= availableDronesCount) {
+      if (dronePoints.value.length >= availableDrones.length) {
         alert('You cannot assign more points than the number of available drones!');
         return;
       }
 
-      // Activate the cell and assign it to the next available drone
+      // Activate the cell and assign it to the next available drone ID
       grid.value[index] = { active: true };
       const point = {
         x: index % cols,
         y: Math.floor(index / cols),
       };
 
-      const availableDrone = drones.value[dronePoints.value.length];
-      if (availableDrone && availableDrone.available) {
-        dronePoints.value.push({ droneId: availableDrone.id, point });
+      if (availableDroneIds.length > 0) {
+        const nextDroneId = availableDroneIds[0];
+        dronePoints.value.push({ droneId: nextDroneId, point });
       }
     }
   }
@@ -273,29 +273,14 @@ const completePath = () => {
       return;
     }
 
-    // Clear any previous assignments and assign points to drones
-    const availableDrones = drones.value.filter((drone) => drone.available);
+    // Clear existing assignments
+    drones.value.forEach(drone => drone.assignPoints([]));
 
-    if (dronePoints.value.length > availableDrones.length) {
-      alert('Not enough available drones to assign all points!');
-      return;
-    }
-
-    // Assign points to drones dynamically
-    dronePoints.value = dronePoints.value.map((dronePoint, index) => {
-      const drone = availableDrones[index];
-      if (drone) {
-        return { droneId: drone.id, point: dronePoint.point };
-      }
-      return null; // Handle case where no drone is available
-    }).filter((assignment) => assignment !== null); // Remove null assignments
-
-    // Update drone assignments
-    drones.value.forEach((drone) => (drone.assignedPoints = [])); // Reset assignments
+    // Assign points to drones using Drone class method
     dronePoints.value.forEach((dronePoint) => {
-      const drone = drones.value.find((d) => d.id === dronePoint.droneId);
-      if (drone) {
-        drone.assignedPoints.push(dronePoint.point);
+      const drone = drones.value.find(d => d.id === dronePoint.droneId);
+      if (drone && drone.available) {
+        drone.assignPoints([dronePoint.point]);
       }
     });
 
