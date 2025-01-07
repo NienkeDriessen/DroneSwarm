@@ -18,6 +18,10 @@
     <!-- Grid container with overlay for lines -->
     <div
       class="grid-container"
+      @mousedown="startDrag"
+      @mouseup="endDrag"
+      @mouseleave="endDrag"
+      @mousemove="handleDrag"
       :style="{
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
@@ -34,7 +38,7 @@
           :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
           :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
           :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-          :stroke="segment.intersecting ? 'red' : '#43b7ff'"
+          :stroke="segment.intersecting ? 'red' : '#435799'"
           stroke-width="10"
         />
       </svg>
@@ -114,6 +118,7 @@ const waypoints = ref<Coordinate[]>([])
 const dronePoints = ref<{ point: Coordinate, droneId: number }[]>([]);
 
 const currentMode = ref('path'); // Default to Path Drawing mode
+const isDragging = ref(false); // Default to no dragging
 
 // Watch for mode changes and reset the grid
 watch(currentMode, (newMode, oldMode) => {
@@ -146,6 +151,33 @@ const getDroneId = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) };
   const drone = dronePoints.value.find((dp) => dp.point.x === point.x && dp.point.y === point.y);
   return drone ? drone.droneId : '';
+};
+
+const startDrag = () => {
+  if (currentMode.value === 'path') {
+    isDragging.value = true;
+  }
+};
+
+const endDrag = () => {
+  isDragging.value = false;
+};
+
+const handleDrag = (event: MouseEvent) => {
+  if (!isDragging.value || currentMode.value !== 'path') return;
+
+  const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect();
+  if (!rect) return;
+
+  const x = Math.floor((event.clientX - rect.left) / cellSize);
+  const y = Math.floor((event.clientY - rect.top) / cellSize);
+
+  if (x >= 0 && x < cols && y >= 0 && y < rows) {
+    const index = y * cols + x;
+    if (!grid.value[index].active) {
+      toggleCell(index);
+    }
+  }
 };
 
 const toggleCell = (index: number) => {
