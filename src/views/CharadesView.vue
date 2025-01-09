@@ -38,7 +38,7 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const droneEndpoint = 'http://192.168.1.142:3000/api/drones' // Replace with actual endpoint
+const droneEndpoint = 'http://145.94.180.130:3000/api/drones' // Replace with actual endpoint
 
 // Helper function for generating intermediate points
 function generateIntermediatePoints(
@@ -111,13 +111,30 @@ const sendShapePath = (path: { x: number; y: number }[]) => {
 
     const dronesArray = createDroneArray(updates)
 
-    try {
-      // Send data to the endpoint
-      await axios.post(droneEndpoint, dronesArray)
-      console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
-    } catch (error) {
-      console.error('Error sending data to drone endpoint:', error)
-    }
+    // try {
+    //   // Send data to the endpoint
+    //   await axios.post(droneEndpoint, dronesArray)
+    //   console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
+    // } catch (error) {
+    //   console.error('Error sending data to drone endpoint:', error)
+    // }
+
+    axios
+    .post(droneEndpoint, dronesArray)
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response);
+          console.log("server responded");
+        } else if (error.request) {
+          console.log("network error");
+          console.log(error.response);
+        } else {
+          console.log(error);
+        }
+      });
 
     stepIndex++
   }, 1000) // Send a coordinate every second
