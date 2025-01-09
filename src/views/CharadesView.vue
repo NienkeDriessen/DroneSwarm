@@ -38,12 +38,12 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const droneEndpoint = 'http://192.168.1.143:3000/api/drones' // Replace with actual endpoint
+const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 
 // Helper function for generating intermediate points
 function generateIntermediatePoints(
-  start: { x: number; y: number },
-  end: { x: number; y: number },
+  start: { x: number; y: number; z: number },
+  end: { x: number; y: number; z: number },
   steps: number,
 ) {
   const points = []
@@ -52,13 +52,16 @@ function generateIntermediatePoints(
     points.push({
       x: start.x + (end.x - start.x) * t,
       y: start.y + (end.y - start.y) * t,
+      z: start.z + (end.z - start.z) * t,
     })
   }
   return points
 }
 
 // Helper function to create a 20-item array (one index per drone)
-const createDroneArray = (updates: { index: number; coordinate: { x: number; y: number } }[]) => {
+const createDroneArray = (
+  updates: { index: number; coordinate: { x: number; y: number; z: number } }[],
+) => {
   // Create an initial array with 20 `null` values
   const dronesArray = Array(20).fill(null)
 
@@ -74,16 +77,19 @@ const createDroneArray = (updates: { index: number; coordinate: { x: number; y: 
   return dronesArray
 }
 
-const sendShapePath = (path: { x: number; y: number }[]) => {
-  const maxStepSize = 0.2 // Adjust step size for smoothness
-  const waypoints: { x: number; y: number }[] = []
+// Send 3D shape path to drones
+const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
+  const maxStepSize = 0.2
+  const waypoints: { x: number; y: number; z: number }[] = []
 
   for (let i = 0; i < path.length - 1; i++) {
     const start = path[i]
     const end = path[i + 1]
 
-    const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2))
-    const steps = Math.max(1, Math.ceil(distance / maxStepSize)) // At least 1 step
+    const distance = Math.sqrt(
+      Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2) + Math.pow(end.z - start.z, 2),
+    )
+    const steps = Math.max(1, Math.ceil(distance / maxStepSize))
 
     waypoints.push(start)
     waypoints.push(...generateIntermediatePoints(start, end, steps))
@@ -93,7 +99,7 @@ const sendShapePath = (path: { x: number; y: number }[]) => {
     waypoints.push(path[path.length - 1])
   }
 
-  console.log('Sending smoothed shape path to drones:', waypoints)
+  console.log('Sending smoothed 3D shape path to drones:', waypoints)
 
   let stepIndex = 0
   const intervalId = setInterval(async () => {
@@ -105,14 +111,11 @@ const sendShapePath = (path: { x: number; y: number }[]) => {
 
     const currentWaypoint = waypoints[stepIndex]
 
-    const updates = [
-      { index: 0, coordinate: currentWaypoint }, // Drone 0 gets the current waypoint
-    ]
+    const updates = [{ index: 0, coordinate: currentWaypoint }]
 
     const dronesArray = createDroneArray(updates)
 
     try {
-      // Send data to the endpoint
       await axios.post(droneEndpoint, dronesArray)
       console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
     } catch (error) {
@@ -120,7 +123,7 @@ const sendShapePath = (path: { x: number; y: number }[]) => {
     }
 
     stepIndex++
-  }, 1000) // Send a coordinate every second
+  }, 1000)
 }
 
 const loadNewGroup = () => {
@@ -143,7 +146,11 @@ const loadNewGroup = () => {
   message.value = ''
 
   // Convert the selected shape's path to {x, y} format
-  const convertedPath = currentShapes[correctAnswerIndex.value].path.map(([x, y]) => ({ x, y }))
+  const convertedPath = currentShapes[correctAnswerIndex.value].path.map(([x, y, z]) => ({
+    x,
+    y,
+    z,
+  }))
 
   // Send shape path of the randomly chosen shape
   sendShapePath(convertedPath)
