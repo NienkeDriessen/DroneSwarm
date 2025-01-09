@@ -38,10 +38,12 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
+//const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
+const droneEndpoint = 'http://145.94.177.54:3000/api/drones'
 
 // Helper function for generating intermediate points
 function generateIntermediatePoints(
+  droneIndex: number,
   start: { x: number; y: number; z: number },
   end: { x: number; y: number; z: number },
   steps: number,
@@ -50,6 +52,9 @@ function generateIntermediatePoints(
   for (let i = 1; i < steps; i++) {
     const t = i / steps
     points.push({
+      index: droneIndex,
+      step: i,
+      totalSteps: steps,
       x: start.x + (end.x - start.x) * t,
       y: start.y + (end.y - start.y) * t,
       z: start.z + (end.z - start.z) * t,
@@ -58,11 +63,11 @@ function generateIntermediatePoints(
   return points
 }
 
-// Helper function to create a 20-item array (one index per drone)
+// Helper function to create an array
 const createDroneArray = (
   updates: { index: number; coordinate: { x: number; y: number; z: number } }[],
 ) => {
-  // Create an initial array with 20 `null` values
+  // Create an initial array
   const dronesArray: { x: number; y: number; z: number }[] = []
 
   // Update the array based on the provided updates
@@ -94,7 +99,7 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
     const steps = Math.max(1, Math.ceil(distance / maxStepSize))
 
     waypoints.push(start)
-    waypoints.push(...generateIntermediatePoints(start, end, steps))
+    waypoints.push(...generateIntermediatePoints(1, start, end, steps))
   }
 
   if (path.length > 0) {
