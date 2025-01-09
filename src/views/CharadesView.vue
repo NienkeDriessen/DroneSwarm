@@ -63,15 +63,17 @@ const createDroneArray = (
   updates: { index: number; coordinate: { x: number; y: number; z: number } }[],
 ) => {
   // Create an initial array with 20 `null` values
-  const dronesArray = Array(20).fill(null)
+  const dronesArray: { x: number; y: number; z: number }[] = []
 
   // Update the array based on the provided updates
   updates.forEach(({ index, coordinate }) => {
-    if (index >= 0 && index < dronesArray.length) {
-      dronesArray[index] = coordinate
-    } else {
-      console.warn(`Index ${index} is out of bounds. Skipping update.`)
+    // Ensure the array is large enough to accommodate the index
+    while (dronesArray.length <= index) {
+      dronesArray.push({ x: 0, y: 0, z: 0 }) // Initialize with default coordinates
     }
+
+    // Update the specific index with the coordinate
+    dronesArray[index] = coordinate
   })
 
   return dronesArray
