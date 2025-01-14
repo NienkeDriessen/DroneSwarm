@@ -89,6 +89,7 @@
     color 0.3s;
   border-radius: 30px 0px 30px 0px; /* Rounded corners for the foreground */
   z-index: 5; /* Ensure the foreground is above */
+  color: #6f1d77;
 }
 
 /* Add the background shape using a pseudo-element */
@@ -103,6 +104,7 @@
   border: 4px solid #6f1d77;
   border-radius: 30px 0px 30px 0px; /* Match the shape of the button */
   z-index: -1; /* Places the background below the button */
+
   box-sizing: border-box;
 }
 .styled-button:hover {
