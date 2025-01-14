@@ -78,7 +78,6 @@
   position: relative; /* Enables positioning for pseudo-elements */
   background-color: #ff99ff; /* Foreground button color */
   border: 4px solid #6f1d77; /* Border color */
-  color: #6f1d77;
   font-size: 2rem;
   padding-bottom: 10%;
   padding-right: 10%;
