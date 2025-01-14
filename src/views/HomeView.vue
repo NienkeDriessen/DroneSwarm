@@ -32,6 +32,10 @@
 </template>
 
 <style scoped>
+@font-face {
+  font-family: mainFont;
+  src: url('@/assets/Alkaline_Caps_Heavy.otf');
+}
 #home-layout {
   background-color: #f7ecd8;
   text-align: center;
@@ -46,8 +50,10 @@
 
 #swarming_title {
   color: #d8f103;
-  font-size: 5.75rem;
+  font-size: 8.75rem;
   -webkit-text-stroke: 3px #6f1d77;
+  font-family: mainFont;
+  height: 20dvh;
 }
 
 .drone-svg {
@@ -59,12 +65,13 @@
   color: #6f1d77;
   font-weight: 900;
   font-size: 3.75rem;
+  font-family: 'Arial Narrow', Arial, sans-serif;
 }
 
 .button-container {
   display: flex;
   gap: 1rem;
-  padding-top: 10%;
+  padding-top: 5%;
 }
 
 .styled-button {
@@ -72,7 +79,7 @@
   background-color: #ff99ff; /* Foreground button color */
   border: 4px solid #6f1d77; /* Border color */
   color: #6f1d77;
-  font-size: 1.75rem;
+  font-size: 2rem;
   padding-bottom: 10%;
   padding-right: 10%;
   width: 400px;
