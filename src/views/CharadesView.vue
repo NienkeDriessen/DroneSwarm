@@ -120,19 +120,19 @@ const sendShapePath = (path: { x: number; y: number }[]) => {
     // }
 
     axios
-    .post(droneEndpoint, dronesArray)
+    .post(droneEndpoint, dronesArray, { timeout: 2000 })
       .then((response) => {
         console.log(response);
       })
       .catch((error) => {
         if (error.response) {
+          console.log("server error");
           console.log(error.response);
-          console.log("server responded");
         } else if (error.request) {
           console.log("network error");
-          console.log(error.response);
+          console.log(error.request);
         } else {
-          console.log(error);
+          console.log('Error', error.message);
         }
       });
 
