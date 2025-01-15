@@ -126,13 +126,14 @@ const sendShapePath = (path: { x: number; y: number }[]) => {
       })
       .catch((error) => {
         if (error.response) {
-          console.log("server error");
+          console.log("SERVER ERROR");
           console.log(error.response);
         } else if (error.request) {
-          console.log("network error");
+          console.log("NETWORK ERROR: " + error.message);
           console.log(error.request);
+          console.log(error.toJSON());
         } else {
-          console.log('Error', error.message);
+          console.log('ERROR', error.message);
         }
       });
 
