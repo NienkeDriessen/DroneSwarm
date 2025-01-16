@@ -1,8 +1,8 @@
 <template>
   <div class="charades-container">
     <button @click="goBack" class="back-button">Back</button>
-    <h1>Charades Game</h1>
-    <p>Guess the correct shape!</p>
+    <h1 class="title">Charades Game</h1>
+    <p class="sub-title">Guess the correct shape!</p>
 
     <!-- Use the ShapeButtonGrid Component -->
     <ShapeButtonGrid
@@ -12,7 +12,7 @@
       @select="checkAnswer"
     />
 
-    <p v-if="message">{{ message }}</p>
+    <p class="sub-title" v-if="message">{{ message }}</p>
   </div>
 </template>
 
@@ -38,8 +38,8 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-//const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
-const droneEndpoint = 'http://145.94.177.54:3000/api/drones'
+const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
+//const droneEndpoint = 'http://145.94.177.54:3000/api/drones'
 
 // Helper function for generating intermediate points
 function generateIntermediatePoints(
@@ -188,12 +188,10 @@ const checkAnswer = (index: number) => {
 
   message.value = isCorrect.value
     ? 'Correct! Loading next group...'
-    : 'Wrong! the correct answer was: ' +
-      currentShapes[correctAnswerIndex.value].name +
-      '. Try again with the next group.'
+    : 'The correct answer was: ' + currentShapes[correctAnswerIndex.value].name + '. Try again!'
 
   // Here we might have to wait until drones are in new position?
-  setTimeout(loadNewGroup, 2000)
+  setTimeout(loadNewGroup, 4000)
 }
 
 onMounted(() => loadNewGroup())
@@ -203,7 +201,26 @@ const goBack = () => router.back()
 </script>
 
 <style scoped>
+@font-face {
+  font-family: mainFont;
+  src: url('@/assets/Alkaline_Caps_Heavy.otf');
+}
+.title {
+  color: #6f1d77;
+  font-size: 4.75rem;
+  font-family: mainFont, 'Arial Narrow', Arial, sans-serif;
+  height: 10vh;
+}
+.sub-title {
+  color: #6f1d77;
+  font-weight: 500;
+  font-size: 1.75rem;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+}
 .charades-container {
+  background-color: #f7ecd8;
+  min-height: 100vh; /* Ensures the background color fills the viewport */
+  min-width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -213,12 +230,14 @@ const goBack = () => router.back()
 }
 
 .back-button {
-  padding: 0.5rem 1rem;
+  padding: 1rem 2rem;
+  margin-left: 1vw;
+  margin-top: 1vh;
   font-size: 1rem;
   cursor: pointer;
-  background-color: #ffffff;
-  color: #000;
-  border: 2px solid black;
+  background-color: #6f1d77;
+  color: #f7ecd8;
+  border: 0px solid #f7ecd8;
   border-radius: 4px;
   align-self: flex-start;
 }

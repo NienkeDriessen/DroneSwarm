@@ -1,8 +1,8 @@
 <template>
   <div class="path-drawing">
     <button @click="goBack" class="back-button">Back</button>
-    <h1>Create Your Path</h1>
-    <p>Click on the grid squares to draw the path</p>
+    <h1 class="title">Create Your Path</h1>
+    <p class="sub-title">Click on the grid squares to draw the path</p>
 
     <!-- Grid container with overlay for lines -->
     <div
@@ -51,7 +51,11 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Moved geometry definition and tools to a separate file for clarity
-import { doLinesIntersect, generateIntermediatePoints, type Coordinate } from '../assets/GeometryTools'
+import {
+  doLinesIntersect,
+  generateIntermediatePoints,
+  type Coordinate,
+} from '../assets/GeometryTools'
 
 // Define the grid size
 const rows = 8
@@ -172,11 +176,31 @@ const goBack = () => {
 </script>
 
 <style scoped>
+@font-face {
+  font-family: mainFont;
+  src: url('@/assets/Alkaline_Caps_Heavy.otf');
+}
+.title {
+  color: #6f1d77;
+  font-size: 4.75rem;
+  font-family: mainFont, 'Arial Narrow', Arial, sans-serif;
+  height: 10vh;
+}
+.sub-title {
+  color: #6f1d77;
+  font-weight: 500;
+  font-size: 1.75rem;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+  margin-top: 2vh;
+}
 .path-drawing {
+  background-color: #f7ecd8;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  min-height: 100vh; /* Ensures the background color fills the viewport */
+  min-width: 100vw;
 }
 
 .grid-container {
@@ -226,14 +250,15 @@ const goBack = () => {
 }
 
 .back-button {
-  padding: 0.5rem 1rem;
+  padding: 1rem 2rem;
+  margin-left: 1vw;
+  margin-top: 1vh;
   font-size: 1rem;
   cursor: pointer;
-  background-color: #ffffff;
-  color: rgb(0, 0, 0);
-  border: 2px solid black;
+  background-color: #6f1d77;
+  color: #f7ecd8;
+  border: 0px solid #f7ecd8;
   border-radius: 4px;
-  transition: background-color 0.3s;
   align-self: flex-start;
 }
 </style>

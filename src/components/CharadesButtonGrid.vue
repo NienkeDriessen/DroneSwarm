@@ -45,27 +45,52 @@ defineEmits(['select'])
 }
 
 .shape-button {
-  padding-top: 5rem;
-  padding-bottom: 5rem;
-  padding-left: 7rem;
-  padding-right: 7rem;
-  font-size: 1.2rem;
-  border: 2px solid #000;
-  border-radius: 8px;
-  background-color: #f0f0f0;
+  position: relative; /* Enables positioning for pseudo-elements */
+  background-color: #ff99ff; /* Foreground button color */
+  border: 4px solid #6f1d77; /* Border color */
+  color: #6f1d77;
+  font-size: 2rem;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+  padding-bottom: 10%;
+  padding-right: 10%;
+  margin: 1vh;
+  width: 400px;
+  height: 210px;
   cursor: pointer;
   transition:
     background-color 0.3s,
-    transform 0.2s;
+    color 0.3s;
+  border-radius: 30px 0px 30px 0px; /* Rounded corners for the foreground */
+  z-index: 5; /* Ensure the foreground is above */
 }
 
+/* Add the background shape using a pseudo-element */
+.shape-button::before {
+  content: ''; /* Creates the background element */
+  position: absolute;
+  top: -12px; /* Offset slightly down */
+  left: -12px; /* Offset slightly to the right */
+  width: 100%; /* Match the size of the button */
+  height: 100%;
+  background-color: #f7ecd8; /* Background shape color */
+  border: 4px solid #6f1d77;
+  border-radius: 30px 0px 30px 0px; /* Match the shape of the button */
+  z-index: -1; /* Places the background below the button */
+  box-sizing: border-box;
+}
+
+.shape-button.correct::before {
+  background-color: #009b77;
+}
 .shape-button.correct {
-  background-color: #4caf50;
-  color: white;
+  color: #f7ecd8;
+}
+
+.shape-button.wrong::before {
+  background-color: #a40034;
 }
 
 .shape-button.wrong {
-  background-color: #f44336;
-  color: white;
+  color: #f7ecd8;
 }
 </style>
