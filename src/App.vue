@@ -1,6 +1,7 @@
 <script setup lang="ts">
 //import { RouterView } from 'vue-router'
 //import HelloWorld from './components/HelloWorld.vue'
+document.documentElement.requestFullscreen()
 </script>
 
 <template>
@@ -21,5 +22,15 @@ body {
   min-height: 100vh;
   background-color: #f7ecd8; /* Matches your HomeView background */
   padding: 0rem !important;
+}
+/*If we want the screen locked uncomment this! */
+/*
+body {
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+} */
+meta[name='viewport'] {
+  content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
 }
 </style>
