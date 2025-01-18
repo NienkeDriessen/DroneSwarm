@@ -5,12 +5,15 @@
       <div
         v-for="drone in drones"
         :key="drone.id"
-        :class="['drone-box', { 'unavailable': !drone.available, 'available': drone.available }]"
+        :class="['drone-box', { unavailable: !drone.available, available: drone.available }]"
       >
         <div class="drone-header">
           <span>Drone {{ drone.id }}</span>
           <span
-            :class="['status-indicator', { 'available': drone.available, 'unavailable': !drone.available }]"
+            :class="[
+              'status-indicator',
+              { available: drone.available, unavailable: !drone.available },
+            ]"
           ></span>
         </div>
         <div class="drone-status-text" v-if="drone.available">Available</div>
@@ -29,7 +32,6 @@
 </template>
 
 <script setup lang="ts">
-
 import Drone from '../models/Drone'
 
 defineProps<{
@@ -46,6 +48,7 @@ defineProps<{
   max-width: 90%;
   margin: 20px auto;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: scroll;
 }
 
 .drone-status-container h3 {
@@ -71,7 +74,9 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 
 .drone-box.available {

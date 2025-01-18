@@ -1,6 +1,6 @@
 <template>
   <div id="home-layout">
-    <h1 class="title" id="swarming_title">Swarmingg</h1>
+    <h1 class="title" id="swarming_title">Swarming</h1>
     <h1 class="title" id="lab_title">Lab</h1>
     <img
       ref="drone_1"

@@ -1,8 +1,28 @@
 <template>
   <div class="path-drawing">
-    <button @click="goBack" class="back-button">Back</button>
-    <h1 class="title">Create Your Path</h1>
-    <p class="sub-title">Click on the grid squares to draw the path</p>
+    <div class="control-row">
+      <button @click="goBack" class="back-button">Back</button>
+      <div class="title-col">
+        <h1 class="title">Create Your Path</h1>
+        <p class="sub-title">Click on the grid squares to draw the path</p>
+      </div>
+      <div class="mode-toggle">
+        <button
+          id="path-mode-button"
+          :class="['mode-button', currentMode === Mode.PATH ? 'active' : '']"
+          @click="setMode(Mode.PATH)"
+        >
+          Draw a path!
+        </button>
+        <button
+          id="points-mode-button"
+          :class="['mode-button', currentMode === Mode.POINTS ? 'active' : '']"
+          @click="setMode(Mode.POINTS)"
+        >
+          Shape the drones!
+        </button>
+      </div>
+    </div>
     <!-- Grid container with overlay for lines -->
     <div
       class="grid-container"
@@ -43,20 +63,6 @@
 
     <!-- Control buttons -->
     <div class="control-row">
-      <div class="mode-toggle">
-        <button
-          :class="['mode-button', currentMode === Mode.PATH ? 'active' : '']"
-          @click="setMode(Mode.PATH)"
-        >
-          Draw a path!
-        </button>
-        <button
-          :class="['mode-button', currentMode === Mode.POINTS ? 'active' : '']"
-          @click="setMode(Mode.POINTS)"
-        >
-          Shape the drones!
-        </button>
-      </div>
       <div class="button-container">
         <button id="undo-button" @click="undo" class="control-button">Undo</button>
         <button id="reset-button" @click="resetPath" class="control-button">Reset</button>
@@ -316,8 +322,15 @@ const goBack = () => {
 .control-row {
   display: flex;
   align-items: center;
-  gap: 5vw;
+  gap: 2vw;
   margin-top: 1rem;
+}
+
+.title-col {
+  display: flex;
+  align-items: center;
+  width: 60vw;
+  flex-direction: column;
 }
 .title {
   color: #6f1d77;
@@ -399,8 +412,8 @@ const goBack = () => {
 
 .back-button {
   padding: 1rem 2rem;
-  margin-left: 3vw;
-  margin-top: 3vh;
+  margin-left: 1vw;
+  margin-top: 1vh;
   font-size: 1rem;
   cursor: pointer;
   background-color: #6f1d77;
@@ -432,16 +445,32 @@ const goBack = () => {
   transition:
     background-color 0.3s,
     color 0.3s;
+  margin: 0px;
+  width: 15vw;
 }
 
 .mode-button.active {
   background-color: #6f1d77; /* Active button color */
   color: #f7ecd8;
+  margin: 0px;
 }
 
 .mode-button:not(.active) {
   background-color: #f7ecd8; /* Inactive button color */
   color: #6f1d77;
+  border: 2px solid #6f1d77;
   cursor: not-allowed;
+  margin: 0px;
+}
+
+.mode-toggle {
+  width: 15vw;
+}
+
+#path-mode-button {
+  border-radius: 5px 5px 0 0;
+}
+#points-mode-button {
+  border-radius: 0 0 5px 5px;
 }
 </style>
