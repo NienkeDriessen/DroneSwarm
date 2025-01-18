@@ -3,18 +3,6 @@
     <button @click="goBack" class="back-button">Back</button>
     <h1 class="title">Create Your Path</h1>
     <p class="sub-title">Click on the grid squares to draw the path</p>
-
-    <div class="mode-toggle">
-      <label for="mode">Mode:</label>
-      <select id="mode" v-model="currentMode">
-        <option value="path">Path Drawing</option>
-        <option value="points">Point Assignment</option>
-      </select>
-    </div>
-
-    <!-- Drone Status Overview -->
-    <DroneStatus :drones="drones" />
-
     <!-- Grid container with overlay for lines -->
     <div
       class="grid-container"
@@ -38,8 +26,8 @@
           :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
           :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
           :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-          :stroke="segment.intersecting ? 'red' : '#435799'"
-          stroke-width="10"
+          :stroke="segment.intersecting ? 'red' : '#ff99ff'"
+          stroke-width="8"
         />
       </svg>
       <!-- Grid cells -->
@@ -47,18 +35,37 @@
         v-for="(cell, index) in grid"
         :key="index"
         :class="['grid-cell', cell.active ? 'active' : '']"
-        :data-drone-id="currentMode === 'points' ? getDroneId(index) : ''"
+        :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
         @click="toggleCell(index)"
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
 
     <!-- Control buttons -->
-    <div class="button-container">
-      <button @click="undo" class="control-button">Undo</button>
-      <button @click="resetPath" class="control-button">Reset</button>
-      <button @click="completePath" class="control-button">Done</button>
+    <div class="control-row">
+      <div class="mode-toggle">
+        <button
+          :class="['mode-button', currentMode === Mode.PATH ? 'active' : '']"
+          @click="setMode(Mode.PATH)"
+        >
+          Draw a path!
+        </button>
+        <button
+          :class="['mode-button', currentMode === Mode.POINTS ? 'active' : '']"
+          @click="setMode(Mode.POINTS)"
+        >
+          Shape the drones!
+        </button>
+      </div>
+      <div class="button-container">
+        <button id="undo-button" @click="undo" class="control-button">Undo</button>
+        <button id="reset-button" @click="resetPath" class="control-button">Reset</button>
+        <button id="complete-button" @click="completePath" class="control-button">Done</button>
+      </div>
     </div>
+
+    <!-- Drone Status Overview -->
+    <DroneStatus v-if="currentMode === Mode.POINTS" :drones="drones" />
   </div>
 </template>
 
@@ -74,6 +81,11 @@ import {
 } from '../assets/GeometryTools'
 import DroneStatus from '../components/DroneStatus.vue'
 import Drone from '../models/Drone'
+
+enum Mode {
+  PATH = 'path',
+  POINTS = 'points',
+}
 
 const drones = ref<Drone[]>([
   new Drone(1, true),
@@ -117,7 +129,7 @@ const waypoints = ref<Coordinate[]>([])
 
 const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([])
 
-const currentMode = ref('path') // Default to Path Drawing mode
+const currentMode = ref<Mode>(Mode.PATH) // Default is draw
 const isDragging = ref(false) // Default to no dragging
 
 // Watch for mode changes and reset the grid
@@ -126,6 +138,9 @@ watch(currentMode, (newMode, oldMode) => {
     resetPath()
   }
 })
+const setMode = (mode: Mode) => {
+  currentMode.value = mode
+}
 
 const lineSegments = computed(() => {
   const segments = pathCoordinates.value.slice(1).map((end, index) => ({
@@ -154,9 +169,7 @@ const getDroneId = (index: number) => {
 }
 
 const startDrag = () => {
-  if (currentMode.value === 'path') {
-    isDragging.value = true
-  }
+  if (currentMode.value === Mode.PATH) isDragging.value = true
 }
 
 const endDrag = () => {
@@ -164,66 +177,43 @@ const endDrag = () => {
 }
 
 const handleDrag = (event: MouseEvent) => {
-  if (!isDragging.value || currentMode.value !== 'path') return
-
+  if (!isDragging.value || currentMode.value !== Mode.PATH) return
   const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect()
   if (!rect) return
 
   const x = Math.floor((event.clientX - rect.left) / cellSize)
   const y = Math.floor((event.clientY - rect.top) / cellSize)
+  const index = y * cols + x
 
-  if (x >= 0 && x < cols && y >= 0 && y < rows) {
-    const index = y * cols + x
-    if (!grid.value[index].active) {
-      toggleCell(index)
-    }
+  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
+    toggleCell(index)
   }
 }
 
 const toggleCell = (index: number) => {
-  if (currentMode.value === 'path') {
-    // Existing path drawing logic
-    if (pathCoordinates.value.length === 0 || !grid.value[index].active) {
+  const point = { x: index % cols, y: Math.floor(index / cols) }
+
+  if (currentMode.value === Mode.PATH) {
+    if (!grid.value[index].active) {
       grid.value[index] = { active: true }
-      pathCoordinates.value.push({
-        x: index % cols,
-        y: Math.floor(index / cols),
-      })
+      pathCoordinates.value.push(point)
     }
-  } else if (currentMode.value === 'points') {
-    const availableDrones = drones.value.filter((drone) => drone.available)
-    const usedDroneIds = new Set(dronePoints.value.map((dp) => dp.droneId))
-    const availableDroneIds = availableDrones
-      .map((drone) => drone.id)
-      .filter((id) => !usedDroneIds.has(id))
-      .sort((a, b) => a - b)
-
-    // Check if the cell is already assigned
-    const cellIndex = dronePoints.value.findIndex(
-      (dp) => dp.point.x === index % cols && dp.point.y === Math.floor(index / cols),
+  } else if (currentMode.value === Mode.POINTS) {
+    const droneIndex = dronePoints.value.findIndex(
+      (dp) => dp.point.x === point.x && dp.point.y === point.y,
     )
-
-    if (cellIndex !== -1) {
-      // Deactivate the cell and remove its assignment
+    if (droneIndex !== -1) {
       grid.value[index] = { active: false }
-      dronePoints.value.splice(cellIndex, 1)
-    } else if (!grid.value[index].active) {
-      // Check if adding another point exceeds the available drones
-      if (dronePoints.value.length >= availableDrones.length) {
-        alert('You cannot assign more points than the number of available drones!')
-        return
-      }
-
-      // Activate the cell and assign it to the next available drone ID
-      grid.value[index] = { active: true }
-      const point = {
-        x: index % cols,
-        y: Math.floor(index / cols),
-      }
-
-      if (availableDroneIds.length > 0) {
-        const nextDroneId = availableDroneIds[0]
-        dronePoints.value.push({ droneId: nextDroneId, point })
+      dronePoints.value.splice(droneIndex, 1)
+    } else {
+      const availableDrone = drones.value.find(
+        (drone) => drone.available && !dronePoints.value.some((dp) => dp.droneId === drone.id),
+      )
+      if (availableDrone) {
+        grid.value[index] = { active: true }
+        dronePoints.value.push({ point, droneId: availableDrone.id })
+      } else {
+        alert('No available drones!')
       }
     }
   }
@@ -231,25 +221,16 @@ const toggleCell = (index: number) => {
 
 // Undo the last cell in the path
 const undo = () => {
-  if (currentMode.value === 'path') {
-    if (pathCoordinates.value.length > 0) {
-      const lastPoint = pathCoordinates.value.pop()
-      if (lastPoint) {
-        const lastIndex = lastPoint.y * cols + lastPoint.x
-        grid.value[lastIndex] = { active: false }
-      }
-    }
-  } else if (currentMode.value === 'points') {
-    if (dronePoints.value.length > 0) {
-      const lastPoint = dronePoints.value.pop()
-      if (lastPoint) {
-        const lastIndex = lastPoint.point.y * cols + lastPoint.point.x
-        grid.value[lastIndex] = { active: false }
-      }
-    }
+  if (currentMode.value === Mode.PATH && pathCoordinates.value.length > 0) {
+    const lastPoint = pathCoordinates.value.pop()!
+    const index = lastPoint.y * cols + lastPoint.x
+    grid.value[index] = { active: false }
+  } else if (currentMode.value === Mode.POINTS && dronePoints.value.length > 0) {
+    const lastPoint = dronePoints.value.pop()!
+    const index = lastPoint.point.y * cols + lastPoint.point.x
+    grid.value[index] = { active: false }
   }
 }
-
 // Reset the path and grid
 const resetPath = () => {
   pathCoordinates.value = []
@@ -259,7 +240,7 @@ const resetPath = () => {
 }
 
 const completePath = () => {
-  if (currentMode.value === 'path') {
+  if (currentMode.value === Mode.PATH) {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
 
     // Handle intersection by asking user to undo or start from scratch
@@ -331,6 +312,13 @@ const goBack = () => {
   font-family: mainFont;
   src: url('@/assets/Alkaline_Caps_Heavy.otf');
 }
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 5vw;
+  margin-top: 1rem;
+}
 .title {
   color: #6f1d77;
   font-size: 4.75rem;
@@ -366,22 +354,24 @@ const goBack = () => {
 .grid-cell {
   width: 20px;
   height: 20px;
-  background-color: #e0e0e0;
+  background-color: #f7ecd8;
+  border: 2px solid #6f1d77;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
 .grid-cell.active {
-  background-color: #43b7ff; /* Active cell color */
+  background-color: #6f1d77; /* Active cell color */
 }
 
-.grid-cell::after {
+/* .grid-cell::after {
   content: attr(data-drone-id);
   display: block;
   text-align: center;
   font-size: 1.5rem;
   color: black;
-}
+  background-color: #6f1d77;
+} */
 
 /* Overlay for lines */
 .line-overlay {
@@ -394,24 +384,23 @@ const goBack = () => {
 .button-container {
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
+  align-items: center;
 }
 
 .control-button {
   padding: 0.5rem 1rem;
   font-size: 1rem;
   cursor: pointer;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  color: #6f1d77;
+  border: 2px solid #6f1d77;
+  border-radius: 10px 0px 10px 0px;
   transition: background-color 0.3s;
 }
 
 .back-button {
   padding: 1rem 2rem;
-  margin-left: 1vw;
-  margin-top: 1vh;
+  margin-left: 3vw;
+  margin-top: 3vh;
   font-size: 1rem;
   cursor: pointer;
   background-color: #6f1d77;
@@ -419,5 +408,40 @@ const goBack = () => {
   border: 0px solid #f7ecd8;
   border-radius: 4px;
   align-self: flex-start;
+}
+
+#undo-button {
+  background-color: #ff99ff;
+}
+
+#complete-button {
+  background-color: #d8f103;
+}
+
+#reset-button {
+  background-color: #ffe5ff;
+}
+
+.mode-button {
+  padding: 10px 20px;
+  margin: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 5px;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+.mode-button.active {
+  background-color: #6f1d77; /* Active button color */
+  color: #f7ecd8;
+}
+
+.mode-button:not(.active) {
+  background-color: #f7ecd8; /* Inactive button color */
+  color: #6f1d77;
+  cursor: not-allowed;
 }
 </style>
