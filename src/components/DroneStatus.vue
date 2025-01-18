@@ -1,6 +1,6 @@
 <template>
   <div class="drone-status-container">
-    <h3>Drone Status</h3>
+    <h3 class="sub-title">Drone Dashboard</h3>
     <div class="drone-status">
       <div
         v-for="drone in drones"
@@ -40,11 +40,17 @@ defineProps<{
 </script>
 
 <style scoped>
+.sub-title {
+  color: #6f1d77;
+  font-weight: 500;
+  font-size: 1.75rem;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+}
 .drone-status-container {
   padding: 20px;
-  border: 2px solid #ccc;
+  border: 3px solid #6f1d77;
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: #f7ecd8;
   max-width: 90%;
   margin: 20px auto;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
@@ -53,7 +59,7 @@ defineProps<{
 
 .drone-status-container h3 {
   text-align: center;
-  color: #333;
+  color: #6f1d77;
   font-family: 'Arial', sans-serif;
   margin-bottom: 15px;
 }

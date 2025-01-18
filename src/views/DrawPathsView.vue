@@ -46,7 +46,7 @@
           :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
           :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
           :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-          :stroke="segment.intersecting ? 'red' : '#ff99ff'"
+          :stroke="segment.intersecting ? '#DB1F22' : '#ff99ff'"
           stroke-width="8"
         />
       </svg>
@@ -60,7 +60,9 @@
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
-
+    <div v-if="notificationMessage" class="notification">
+      {{ notificationMessage }}
+    </div>
     <!-- Control buttons -->
     <div class="control-row">
       <div class="button-container">
@@ -137,6 +139,20 @@ const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([])
 
 const currentMode = ref<Mode>(Mode.PATH) // Default is draw
 const isDragging = ref(false) // Default to no dragging
+
+const notificationMessage = ref<string | null>(null) // To store the notification message
+
+/**
+ * Displays a notification message for a set duration.
+ * @param message The message to display.
+ * @param duration Time (in milliseconds) to display the message.
+ */
+const showNotification = (message: string, duration = 5000) => {
+  notificationMessage.value = message
+  setTimeout(() => {
+    notificationMessage.value = null
+  }, duration)
+}
 
 // Watch for mode changes and reset the grid
 watch(currentMode, (newMode, oldMode) => {
@@ -251,7 +267,7 @@ const completePath = () => {
 
     // Handle intersection by asking user to undo or start from scratch
     if (hasIntersections) {
-      alert('Path contains intersecting lines. Please fix them before proceeding.')
+      showNotification('Path contains intersecting lines. Please fix them before proceeding.')
       return
     }
 
@@ -280,11 +296,11 @@ const completePath = () => {
 
     console.log('Path completed with coordinates:', pathCoordinates.value)
     console.log('Path waypoints including intermediate points:', waypoints.value)
-    alert('Path and waypoints are ready!')
+    showNotification('Path and waypoints are ready!')
   } else if (currentMode.value === 'points') {
     // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
-      alert('You have assigned more points than the number of available drones!')
+      showNotification('You have assigned more points than the number of available drones!')
       return
     }
 
@@ -300,9 +316,9 @@ const completePath = () => {
     })
 
     console.log('Drone assignments for points:', dronePoints.value)
-    alert('Drone assignments for points have been made successfully!')
+    showNotification('Drone assignments for points have been made successfully!')
   } else {
-    alert('Invalid mode selected!')
+    showNotification('Invalid mode selected!')
   }
 }
 
@@ -394,6 +410,12 @@ const goBack = () => {
   pointer-events: none; /* Prevent SVG overlay from blocking clicks */
 }
 
+.notification {
+  color: #6f1d77;
+  font-weight: 300;
+  font-size: 1.4rem;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+}
 .button-container {
   display: flex;
   gap: 1rem;
