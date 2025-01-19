@@ -18,7 +18,7 @@
         <div v-if="drone.assignedPoints && drone.assignedPoints.length > 0" class="assigned-points">
           <strong>Assigned Points:</strong>
           <ul>
-            <li v-for="point in drone.assignedPoints" :key="`${point.x}-${point.y}`">
+            <li v-for="point in drone.assignedPoints" :key="`${point.x},${point.y}`">
               ({{ point.x }}, {{ point.y }})
             </li>
           </ul>
