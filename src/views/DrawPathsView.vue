@@ -1,8 +1,8 @@
 <template>
   <div class="path-drawing">
     <button @click="goBack" class="back-button">Back</button>
-    <h1>Create Your Path</h1>
-    <p>Click on the grid squares to draw the path</p>
+    <h1 class="title">Create Your Path</h1>
+    <p class="sub-title">Click on the grid squares to draw the path</p>
 
     <div class="mode-toggle">
       <label for="mode">Mode:</label>
@@ -66,7 +66,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { doLinesIntersect, generateIntermediatePoints, type Coordinate } from '../assets/GeometryTools'
+import {
+  doLinesIntersect,
+  generateIntermediatePoints,
+  type Coordinate,
+} from '../assets/GeometryTools'
 import DroneStatus from '../components/DroneStatus.vue'
 import Drone from '../models/Drone'
 
