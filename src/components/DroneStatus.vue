@@ -16,7 +16,7 @@
         <div class="drone-status-text" v-if="drone.available">Available</div>
         <div class="drone-status-text" v-else>Unavailable</div>
         <div v-if="drone.assignedPoints && drone.assignedPoints.length > 0" class="assigned-points">
-          <strong>Assigned Points:</strong>
+          <strong>Points:</strong>
           <ul>
             <li v-for="point in drone.assignedPoints" :key="`${point.x},${point.y}`">
               ({{ point.x }}, {{ point.y }})
@@ -122,11 +122,13 @@ defineProps<{
   padding: 8px;
   border-radius: 4px;
   font-size: 14px;
+  color: #333;
 }
 
 .assigned-points ul {
   padding-left: 20px;
   margin: 5px 0;
+
 }
 
 .assigned-points li {

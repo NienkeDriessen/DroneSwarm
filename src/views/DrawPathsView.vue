@@ -64,7 +64,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
 import { useRouter } from 'vue-router'
 import {
   doLinesIntersect,
@@ -75,16 +76,53 @@ import DroneStatus from '../components/DroneStatus.vue'
 import Drone from '../models/Drone'
 
 
-const drones = ref<Drone[]>([
-  new Drone(1, true),
-  new Drone(2, true),
-  new Drone(3, true),
-  new Drone(4, true),
-  new Drone(5, false),
-  new Drone(6, false),
-  new Drone(7, false),
-  new Drone(8, false),
-]);
+// const drones = ref<Drone[]>([
+//   new Drone(1, true),
+//   new Drone(2, true),
+//   new Drone(3, true),
+//   new Drone(4, true),
+//   new Drone(5, false),
+//   new Drone(6, false),
+//   new Drone(7, false),
+//   new Drone(8, false),
+// ]);
+
+// Define the server endpoint for drones data
+const DRONES_API_URL = 'http://192.168.0.101:3000/api/drones'; // Replace with the actual API endpoint
+
+const drones = ref<Drone[]>([]);
+
+// Polling interval in milliseconds (e.g., 5 seconds)
+const POLLING_INTERVAL = 5000;
+
+// Function to fetch drones data from the server
+const fetchDronesData = async () => {
+  try {
+    const response = await axios.get(DRONES_API_URL);
+    const droneData = response.data; // Assuming the response contains the array of drones
+    // Convert the server data into Drone instances
+    drones.value = droneData.map((drone: { id: number; available: boolean }) => new Drone(drone.id, drone.available));
+    console.log('Drones data updated:', drones.value);
+  } catch (error) {
+    console.error('Error fetching drones data:', error);
+  }
+};
+
+// Start polling for drones data
+let pollingIntervalId: number | null = null;
+onMounted(() => {
+  // Initial fetch
+  fetchDronesData();
+  // Set up periodic polling
+  pollingIntervalId = window.setInterval(fetchDronesData, POLLING_INTERVAL);
+});
+
+onUnmounted(() => {
+  // Clear the polling interval when the component is unmounted
+  if (pollingIntervalId !== null) {
+    clearInterval(pollingIntervalId);
+  }
+});
 
 // Helper to count available drones
 const availableDronesCount = computed(() =>
