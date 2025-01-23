@@ -50,9 +50,10 @@ def simulate_drone_removal():
                 print(f"Drone {removed_drone['id']} was removed from the pool.")
 
 
-# Background threads to simulate dynamic drone updates
 threading.Thread(target=simulate_drone_unavailability, daemon=True).start()
-# threading.Thread(target=simulate_drone_removal, daemon=True).start()
+#if you want to also simulate drones being popped
+threading.Thread(target=simulate_drone_removal, daemon=True).start() #if you want to also simulate drones being popped
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3000)  # Allows access from other devices in the same network

@@ -88,12 +88,12 @@ import Drone from '../models/Drone'
 // ]);
 
 // Define the server endpoint for drones data
-const DRONES_API_URL = 'http://192.168.0.101:3000/api/drones'; // Replace with the actual API endpoint
+const DRONES_API_URL = 'http://145.94.161.16:3000/api/drones'; // Replace with the actual API endpoint
 
 const drones = ref<Drone[]>([]);
 
 // Polling interval in milliseconds (e.g., 5 seconds)
-const POLLING_INTERVAL = 5000;
+const POLLING_INTERVAL = 1000;
 
 // Function to fetch drones data from the server
 const fetchDronesData = async () => {
