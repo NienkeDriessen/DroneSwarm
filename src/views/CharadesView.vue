@@ -131,22 +131,22 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
     // }
 
     axios
-    .post(droneEndpoint, dronesArray, { timeout: 2000 })
+      .post(droneEndpoint, dronesArray, { timeout: 2000 })
       .then((response) => {
-        console.log(response);
+        console.log(response)
       })
       .catch((error) => {
         if (error.response) {
-          console.log("SERVER ERROR");
-          console.log(error.response);
+          console.log('SERVER ERROR')
+          console.log(error.response)
         } else if (error.request) {
-          console.log("NETWORK ERROR: " + error.message);
-          console.log(error.request);
-          console.log(error.toJSON());
+          console.log('NETWORK ERROR: ' + error.message)
+          console.log(error.request)
+          console.log(error.toJSON())
         } else {
-          console.log('ERROR', error.message);
+          console.log('ERROR', error.message)
         }
-      });
+      })
 
     stepIndex++
   }, 1000)
@@ -165,7 +165,7 @@ const loadNewGroup = () => {
   // Choose a random correct index
   correctAnswerIndex.value = Math.floor(Math.random() * currentShapes.length)
   // For testing purposes just do the first one
-  correctAnswerIndex.value = 0
+  // correctAnswerIndex.value = 0
   console.log('correct one is: ' + currentShapes[correctAnswerIndex.value].name)
   selectedButton.value = -1
   isCorrect.value = false

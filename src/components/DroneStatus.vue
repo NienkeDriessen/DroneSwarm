@@ -1,16 +1,19 @@
 <template>
   <div class="drone-status-container">
-    <h3>Drone Status</h3>
+    <h3 class="sub-title">Drone Dashboard</h3>
     <div class="drone-status">
       <div
         v-for="drone in drones"
         :key="drone.id"
-        :class="['drone-box', { 'unavailable': !drone.available, 'available': drone.available }]"
+        :class="['drone-box', { unavailable: !drone.available, available: drone.available }]"
       >
         <div class="drone-header">
           <span>Drone {{ drone.id }}</span>
           <span
-            :class="['status-indicator', { 'available': drone.available, 'unavailable': !drone.available }]"
+            :class="[
+              'status-indicator',
+              { available: drone.available, unavailable: !drone.available },
+            ]"
           ></span>
         </div>
         <div class="drone-status-text" v-if="drone.available">Available</div>
@@ -29,7 +32,6 @@
 </template>
 
 <script setup lang="ts">
-
 import Drone from '../models/Drone'
 
 defineProps<{
@@ -38,19 +40,26 @@ defineProps<{
 </script>
 
 <style scoped>
+.sub-title {
+  color: #6f1d77;
+  font-weight: 500;
+  font-size: 1.75rem;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+}
 .drone-status-container {
   padding: 20px;
-  border: 2px solid #ccc;
+  border: 3px solid #6f1d77;
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: #f7ecd8;
   max-width: 90%;
   margin: 20px auto;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: scroll;
 }
 
 .drone-status-container h3 {
   text-align: center;
-  color: #333;
+  color: #6f1d77;
   font-family: 'Arial', sans-serif;
   margin-bottom: 15px;
 }
@@ -71,7 +80,9 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 
 .drone-box.available {
