@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import threading
 import time
@@ -19,7 +19,7 @@ drones_data = [
     {"id": 8, "available": False},
 ]
 
-lock = threading.Lock()  # Thread lock to ensure safe data updates
+lock = threading.Lock()  # lock to ensure safe data updates
 
 
 @app.route('/api/drones', methods=['GET'])
@@ -27,6 +27,12 @@ def get_drones():
     """Endpoint to retrieve drones data."""
     with lock:
         return jsonify(drones_data), 200
+    
+@app.route('/api/drones', methods=['POST'])
+def drones():
+    data = request.get_json()
+    print("Received data:", data)
+    return jsonify({"message": "Data received successfully!"}), 200
 
 
 def simulate_drone_unavailability():

@@ -38,7 +38,7 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
+const droneEndpoint = 'http://145.94.137.97:3000/api/drones'
 //const droneEndpoint = 'http://145.94.177.54:3000/api/drones'
 
 // Helper function for generating intermediate points
