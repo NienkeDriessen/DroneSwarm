@@ -15,8 +15,17 @@
         </div>
         <div class="drone-status-text" v-if="drone.available">Available</div>
         <div class="drone-status-text" v-else>Unavailable</div>
+        <div class="drone-details">
+          <div class="battery-level">Battery: {{ drone.batteryLevel }}%</div>
+          <div class="position">Position: ({{ drone.position.x.toFixed(3) }},
+            {{ drone.position.y.toFixed(3) }},
+            {{ drone.position.z.toFixed(3) }})</div>
+          <div class="velocity">Velocity: ({{ drone.velocity.x.toFixed(3) }},
+            {{ drone.velocity.y.toFixed(3) }},
+            {{ drone.velocity.z.toFixed(3) }})</div>
+        </div>
         <div v-if="drone.assignedPoints && drone.assignedPoints.length > 0" class="assigned-points">
-          <strong>Points:</strong>
+          <strong>Assigned Points:</strong>
           <ul>
             <li v-for="point in drone.assignedPoints" :key="`${point.x},${point.y}`">
               ({{ point.x }}, {{ point.y }})
@@ -29,12 +38,11 @@
 </template>
 
 <script setup lang="ts">
-
-import Drone from '../models/Drone'
+import Drone from '../models/Drone';
 
 defineProps<{
-  drones: Drone[]
-}>()
+  drones: Drone[];
+}>();
 </script>
 
 <style scoped>
@@ -57,10 +65,10 @@ defineProps<{
 
 .drone-status {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  grid-auto-rows: auto;
-  grid-auto-flow: column;
-  gap: 15px;
+  grid-template-columns:
+  minmax(100px, max-content)
+  repeat(auto-fill, 200px) 20%;
+  grid-gap: 10px;
 }
 
 .drone-box {
@@ -117,6 +125,16 @@ defineProps<{
   color: #555;
 }
 
+.drone-details {
+  font-size: 14px;
+  color: #444;
+}
+
+.battery-level {
+  font-weight: bold;
+  color: #333;
+}
+
 .assigned-points {
   background-color: #f1f1f1;
   padding: 8px;
@@ -128,7 +146,6 @@ defineProps<{
 .assigned-points ul {
   padding-left: 20px;
   margin: 5px 0;
-
 }
 
 .assigned-points li {
