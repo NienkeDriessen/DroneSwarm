@@ -1,4 +1,4 @@
-import { type Coordinate } from '../assets/GeometryTools'
+import { type Coordinate } from '../assets/GeometryTools';
 
 interface Position {
   x: number;
@@ -25,8 +25,8 @@ class Drone {
     available: boolean = true,
     assignedPoints: Coordinate[] = [],
     batteryLevel: number = 100,
-    position: Position = {x: 0, y: 0, z: 0},
-    velocity: Velocity = {x: 0, y: 0, z: 0}
+    position: Position = { x: 0, y: 0, z: 0 },
+    velocity: Velocity = { x: 0, y: 0, z: 0 }
   ) {
     this.id = id;
     this.available = available;

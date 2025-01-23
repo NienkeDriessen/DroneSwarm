@@ -24,9 +24,7 @@
       @mousemove="handleDrag"
       :style="{
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
-        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
-        width: `${gridWidth}px`,
-        height: `${gridHeight}px`,
+        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`
       }"
     >
       <!-- Lines -->
@@ -51,7 +49,6 @@
         @click="toggleCell(index)"
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
-
     </div>
 
     <!-- Control buttons -->
@@ -66,102 +63,95 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router'
+import { useRouter } from 'vue-router';
 import {
   doLinesIntersect,
   generateIntermediatePoints,
   type Coordinate,
-} from '../assets/GeometryTools'
-import DroneStatus from '../components/DroneStatus.vue'
-import Drone from '../models/Drone'
+} from '../assets/GeometryTools';
+import DroneStatus from '../components/DroneStatus.vue';
+import Drone from '../models/Drone';
 
-
-// const drones = ref<Drone[]>([
-//   new Drone(1, true),
-//   new Drone(2, true),
-//   new Drone(3, true),
-//   new Drone(4, true),
-//   new Drone(5, false),
-//   new Drone(6, false),
-//   new Drone(7, false),
-//   new Drone(8, false),
-// ]);
-
-// Define the server endpoint for drones data
-const DRONES_API_URL = 'http://145.94.161.16:3000/api/drones'; // Replace with the actual API endpoint
+const DRONES_API_URL = 'http://145.94.63.15:3000/api/drones';
+const POLLING_INTERVAL = 1000;
 
 const drones = ref<Drone[]>([]);
 
-// Polling interval in milliseconds (e.g., 5 seconds)
-const POLLING_INTERVAL = 1000;
 
-// Function to fetch drones data from the server
+interface Position {
+  x: number;
+  y: number;
+  z: number;
+}
+
+// Fetch drones data
 const fetchDronesData = async () => {
   try {
     const response = await axios.get(DRONES_API_URL);
-    const droneData = response.data; // Assuming the response contains the array of drones
-    // Convert the server data into Drone instances
-    drones.value = droneData.map((drone: { id: number; available: boolean }) => new Drone(drone.id, drone.available));
+    const droneData = response.data;
+    // console.log(droneData); //debug
+
+    drones.value = droneData.map(
+      (drone: {
+        id: number;
+        available: boolean;
+        batteryLevel: number;
+        position: Position; // Position, matching the class
+        velocity: { x: number; y: number; z: number };
+      }) =>
+        new Drone(
+          drone.id,
+          drone.available,
+          [], // Pass an empty array for assignedPoints (or actual data if available)
+          drone.batteryLevel,
+          drone.position,
+          drone.velocity
+        )
+    );
+
     console.log('Drones data updated:', drones.value);
   } catch (error) {
     console.error('Error fetching drones data:', error);
   }
 };
 
-// Start polling for drones data
+
 let pollingIntervalId: number | null = null;
 onMounted(() => {
-  // Initial fetch
   fetchDronesData();
-  // Set up periodic polling
   pollingIntervalId = window.setInterval(fetchDronesData, POLLING_INTERVAL);
 });
 
 onUnmounted(() => {
-  // Clear the polling interval when the component is unmounted
   if (pollingIntervalId !== null) {
     clearInterval(pollingIntervalId);
   }
 });
 
-// Helper to count available drones
 const availableDronesCount = computed(() =>
   drones.value.filter((drone) => drone.available).length
 );
 
-
-// Define the grid size
-const rows = 8
-const cols = 15
-const maxGridWidth = 700
-const maxGridHeight = 500
-const gap = 1 // Gap size between cells
-
-const maxStepSize = 0.5 // the max length one step can have
-
-// Calculate cell size based on the max dimensions and number of cells including gaps
+const rows = 8;
+const cols = 15;
+const maxGridWidth = 700;
+const maxGridHeight = 500;
+const gap = 1;
+const maxStepSize = 0.5;
 const cellSize = Math.min(
   (maxGridWidth - gap * (cols - 1)) / cols,
-  (maxGridHeight - gap * (rows - 1)) / rows,
-)
-const gridWidth = cellSize * cols + gap * (cols - 1)
-const gridHeight = cellSize * rows + gap * (rows - 1)
+  (maxGridHeight - gap * (rows - 1)) / rows
+);
+const gridWidth = cellSize * cols + gap * (cols - 1);
+const gridHeight = cellSize * rows + gap * (rows - 1);
 
-// Initialize the grid array with inactive cells
-const grid = ref(Array(rows * cols).fill({ active: false }))
+const grid = ref(Array(rows * cols).fill({ active: false }));
+const pathCoordinates = ref<Coordinate[]>([]);
+const waypoints = ref<Coordinate[]>([]);
+const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([]);
+const currentMode = ref('path');
+const isDragging = ref(false);
 
-// Track the selected path coordinates
-const pathCoordinates = ref<Coordinate[]>([])
-
-// Create array for the waypoint generator itself
-const waypoints = ref<Coordinate[]>([])
-
-const dronePoints = ref<{ point: Coordinate, droneId: number }[]>([]);
-
-const currentMode = ref('path'); // Default to Path Drawing mode
-const isDragging = ref(false); // Default to no dragging
-
-// Watch for mode changes and reset the grid
 watch(currentMode, (newMode, oldMode) => {
   if (newMode !== oldMode) {
     resetPath();
@@ -172,25 +162,26 @@ const lineSegments = computed(() => {
   const segments = pathCoordinates.value.slice(1).map((end, index) => ({
     start: pathCoordinates.value[index],
     end: end,
-    intersecting: false, // Default to false
-  }))
+    intersecting: false,
+  }));
 
-  // Check each segment for intersections with every other segment
   segments.forEach((segment, i) => {
     for (let j = 0; j < i; j++) {
       if (doLinesIntersect(segment.start, segment.end, segments[j].start, segments[j].end)) {
-        segment.intersecting = true
-        segments[j].intersecting = true
+        segment.intersecting = true;
+        segments[j].intersecting = true;
       }
     }
-  })
+  });
 
-  return segments
-})
+  return segments;
+});
 
 const getDroneId = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) };
-  const drone = dronePoints.value.find((dp) => dp.point.x === point.x && dp.point.y === point.y);
+  const drone = dronePoints.value.find(
+    (dp) => dp.point.x === point.x && dp.point.y === point.y
+  );
   return drone ? drone.droneId : '';
 };
 
@@ -207,7 +198,9 @@ const endDrag = () => {
 const handleDrag = (event: MouseEvent) => {
   if (!isDragging.value || currentMode.value !== 'path') return;
 
-  const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect();
+  const rect = (event.target as HTMLElement)
+    .closest('.grid-container')
+    ?.getBoundingClientRect();
   if (!rect) return;
 
   const x = Math.floor((event.clientX - rect.left) / cellSize);
@@ -223,7 +216,6 @@ const handleDrag = (event: MouseEvent) => {
 
 const toggleCell = (index: number) => {
   if (currentMode.value === 'path') {
-    // Existing path drawing logic
     if (pathCoordinates.value.length === 0 || !grid.value[index].active) {
       grid.value[index] = { active: true };
       pathCoordinates.value.push({
@@ -232,30 +224,26 @@ const toggleCell = (index: number) => {
       });
     }
   } else if (currentMode.value === 'points') {
-    const availableDrones = drones.value.filter(drone => drone.available);
-    const usedDroneIds = new Set(dronePoints.value.map(dp => dp.droneId));
+    const availableDrones = drones.value.filter((drone) => drone.available);
+    const usedDroneIds = new Set(dronePoints.value.map((dp) => dp.droneId));
     const availableDroneIds = availableDrones
-      .map(drone => drone.id)
-      .filter(id => !usedDroneIds.has(id))
+      .map((drone) => drone.id)
+      .filter((id) => !usedDroneIds.has(id))
       .sort((a, b) => a - b);
 
-    // Check if the cell is already assigned
     const cellIndex = dronePoints.value.findIndex(
       (dp) => dp.point.x === index % cols && dp.point.y === Math.floor(index / cols)
     );
 
     if (cellIndex !== -1) {
-      // Deactivate the cell and remove its assignment
       grid.value[index] = { active: false };
       dronePoints.value.splice(cellIndex, 1);
     } else if (!grid.value[index].active) {
-      // Check if adding another point exceeds the available drones
       if (dronePoints.value.length >= availableDrones.length) {
         alert('You cannot assign more points than the number of available drones!');
         return;
       }
 
-      // Activate the cell and assign it to the next available drone ID
       grid.value[index] = { active: true };
       const point = {
         x: index % cols,
@@ -270,66 +258,56 @@ const toggleCell = (index: number) => {
   }
 };
 
-
-// Undo the last cell in the path
 const undo = () => {
   if (currentMode.value === 'path') {
     if (pathCoordinates.value.length > 0) {
-      const lastPoint = pathCoordinates.value.pop()
+      const lastPoint = pathCoordinates.value.pop();
       if (lastPoint) {
-        const lastIndex = lastPoint.y * cols + lastPoint.x
-        grid.value[lastIndex] = { active: false }
+        const lastIndex = lastPoint.y * cols + lastPoint.x;
+        grid.value[lastIndex] = { active: false };
       }
     }
-  }
-  else if (currentMode.value === 'points') {
+  } else if (currentMode.value === 'points') {
     if (dronePoints.value.length > 0) {
-      const lastPoint = dronePoints.value.pop()
+      const lastPoint = dronePoints.value.pop();
       if (lastPoint) {
-        const lastIndex = lastPoint.point.y * cols + lastPoint.point.x
-        grid.value[lastIndex] = { active: false }
+        const lastIndex = lastPoint.point.y * cols + lastPoint.point.x;
+        grid.value[lastIndex] = { active: false };
       }
     }
   }
-}
+};
 
-// Reset the path and grid
 const resetPath = () => {
   pathCoordinates.value = [];
   dronePoints.value = [];
   waypoints.value = [];
-  grid.value = Array(rows * cols).fill({ active: false })
-}
+  grid.value = Array(rows * cols).fill({ active: false });
+};
 
 const completePath = () => {
   if (currentMode.value === 'path') {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting);
 
-    // Handle intersection by asking user to undo or start from scratch
     if (hasIntersections) {
       alert('Path contains intersecting lines. Please fix them before proceeding.');
       return;
     }
 
-    // Generate waypoints if no intersections
     waypoints.value = [];
     for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
       const start = pathCoordinates.value[i];
       const end = pathCoordinates.value[i + 1];
 
-      // Calculate distance between points
-      const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-      // Dynamically determine the number of steps
-      const steps = Math.max(1, Math.ceil(distance / maxStepSize)); // At least 1 step
+      const distance = Math.sqrt(
+        Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
+      );
+      const steps = Math.max(1, Math.ceil(distance / maxStepSize));
 
-      // Add the starting point
       waypoints.value.push(start);
-
-      // Add intermediate points
       waypoints.value.push(...generateIntermediatePoints(start, end, steps));
     }
 
-    // Add the last point
     if (pathCoordinates.value.length > 0) {
       waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1]);
     }
@@ -337,20 +315,15 @@ const completePath = () => {
     console.log('Path completed with coordinates:', pathCoordinates.value);
     console.log('Path waypoints including intermediate points:', waypoints.value);
     alert('Path and waypoints are ready!');
-
   } else if (currentMode.value === 'points') {
-    // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
       alert('You have assigned more points than the number of available drones!');
       return;
     }
 
-    // Clear existing assignments
-    drones.value.forEach(drone => drone.assignPoints([]));
-
-    // Assign points to drones using Drone class method
+    drones.value.forEach((drone) => drone.assignPoints([]));
     dronePoints.value.forEach((dronePoint) => {
-      const drone = drones.value.find(d => d.id === dronePoint.droneId);
+      const drone = drones.value.find((d) => d.id === dronePoint.droneId);
       if (drone && drone.available) {
         drone.assignPoints([dronePoint.point]);
       }
@@ -358,17 +331,15 @@ const completePath = () => {
 
     console.log('Drone assignments for points:', dronePoints.value);
     alert('Drone assignments for points have been made successfully!');
-
   } else {
     alert('Invalid mode selected!');
   }
 };
 
-// Go back function to navigate to the previous page
-const router = useRouter()
+const router = useRouter();
 const goBack = () => {
-  router.back()
-}
+  router.back();
+};
 </script>
 
 <style scoped>
@@ -395,29 +366,25 @@ const goBack = () => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  min-height: 100vh; /* Ensures the background color fills the viewport */
+  min-height: 100vh;
   min-width: 100vw;
 }
 
 .grid-container {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(30, 20px);
-  grid-template-rows: repeat(20, 20px);
   gap: 2px;
   margin: 1rem 0;
 }
 
 .grid-cell {
-  width: 20px;
-  height: 20px;
   background-color: #e0e0e0;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
 .grid-cell.active {
-  background-color: #43b7ff; /* Active cell color */
+  background-color: #43b7ff;
 }
 
 .grid-cell::after {
@@ -428,12 +395,11 @@ const goBack = () => {
   color: black;
 }
 
-/* Overlay for lines */
 .line-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  pointer-events: none; /* Prevent SVG overlay from blocking clicks */
+  pointer-events: none;
 }
 
 .button-container {
@@ -461,7 +427,7 @@ const goBack = () => {
   cursor: pointer;
   background-color: #6f1d77;
   color: #f7ecd8;
-  border: 0px solid #f7ecd8;
+  border: none;
   border-radius: 4px;
   align-self: flex-start;
 }
