@@ -106,7 +106,7 @@ const fetchDronesData = async () => {
     drones.value = Object.entries(dronesData).map(([id, data]) =>
       new Drone(
         parseInt(id), // Drone ID
-        "Unknown", // Assume drones are available unless there's additional info
+        true, // Assume drones are available unless there's additional info
         [], // Empty assignedPoints (or modify if necessary)
         data.bat_level, // Battery Level
         { x: data.pos_x, y: data.pos_y, z: data.pos_z }, // Position
@@ -134,7 +134,7 @@ onUnmounted(() => {
 });
 
 const availableDronesCount = computed(() =>
-  drones.value.filter((drone) => drone.status === "available").length
+  drones.value.filter((drone) => drone.available).length
 );
 
 const rows = 8;
@@ -229,7 +229,7 @@ const toggleCell = (index: number) => {
       });
     }
   } else if (currentMode.value === 'points') {
-    const availableDrones = drones.value.filter((drone) => drone.status === "available");
+    const availableDrones = drones.value.filter((drone) => drone.available);
     const usedDroneIds = new Set(dronePoints.value.map((dp) => dp.droneId));
     const availableDroneIds = availableDrones
       .map((drone) => drone.id)
@@ -329,7 +329,7 @@ const completePath = () => {
     drones.value.forEach((drone) => drone.assignPoints([]));
     dronePoints.value.forEach((dronePoint) => {
       const drone = drones.value.find((d) => d.id === dronePoint.droneId);
-      if (drone && drone.status === "available") {
+      if (drone && drone.available) {
         drone.assignPoints([dronePoint.point]);
       }
     });
