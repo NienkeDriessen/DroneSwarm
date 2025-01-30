@@ -14,7 +14,7 @@ interface Velocity {
 
 class Drone {
   id: number;
-  available: boolean;
+  status: string;
   assignedPoints: Coordinate[];
   batteryLevel: number;
   position: Position;
@@ -22,14 +22,14 @@ class Drone {
 
   constructor(
     id: number,
-    available: boolean = true,
+    status: string = "unknown",
     assignedPoints: Coordinate[] = [],
     batteryLevel: number = 100,
     position: Position = { x: 0, y: 0, z: 0 },
     velocity: Velocity = { x: 0, y: 0, z: 0 }
   ) {
     this.id = id;
-    this.available = available;
+    this.status = status;
     this.assignedPoints = assignedPoints;
     this.batteryLevel = batteryLevel;
     this.position = position;
@@ -43,7 +43,12 @@ class Drone {
 
   // Method to toggle availability
   toggleAvailability() {
-    this.available = !this.available;
+    this.status = "available";
+  }
+
+  // Method to toggle availability
+  toggleUnavailability() {
+    this.status = "unavailable";
   }
 
   // Method to update drone status from API data

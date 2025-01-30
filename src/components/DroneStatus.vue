@@ -61,13 +61,12 @@ defineProps<{
   color: #333;
   font-family: 'Arial', sans-serif;
   margin-bottom: 15px;
+  font-size: 15px;
 }
 
 .drone-status {
   display: grid;
-  grid-template-columns:
-  minmax(100px, max-content)
-  repeat(auto-fill, 200px) 20%;
+  grid-template-columns: repeat(4, 300px);
   grid-gap: 10px;
 }
 
@@ -102,7 +101,7 @@ defineProps<{
   justify-content: space-between;
   align-items: center;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 14px;
   color: #333;
 }
 
@@ -121,7 +120,7 @@ defineProps<{
 }
 
 .drone-status-text {
-  font-size: 14px;
+  font-size: 1px;
   color: #555;
 }
 

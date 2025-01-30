@@ -122,14 +122,6 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
 
     const dronesArray = createDroneArray(updates)
 
-    // try {
-    //   // Send data to the endpoint
-    //   await axios.post(droneEndpoint, dronesArray)
-    //   console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
-    // } catch (error) {
-    //   console.error('Error sending data to drone endpoint:', error)
-    // }
-
     axios
     .post(droneEndpoint, dronesArray, { timeout: 2000 })
       .then((response) => {

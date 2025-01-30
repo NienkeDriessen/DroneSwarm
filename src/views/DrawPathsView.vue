@@ -73,40 +73,45 @@ import DroneStatus from '../components/DroneStatus.vue';
 import Drone from '../models/Drone';
 
 const DRONES_API_URL = 'http://145.94.63.15:3000/api/drones';
-const POLLING_INTERVAL = 1000;
+const POLLING_INTERVAL = 100;
 
 const drones = ref<Drone[]>([]);
 
 
-interface Position {
-  x: number;
-  y: number;
-  z: number;
+// interface Position {
+//   x: number;
+//   y: number;
+//   z: number;
+// }
+
+// Define the expected structure of the incoming drone data
+interface DroneData {
+  bat_level: number;
+  pos_x: number;
+  pos_y: number;
+  pos_z: number;
+  vel_x: number;
+  vel_y: number;
+  vel_z: number;
 }
 
 // Fetch drones data
 const fetchDronesData = async () => {
   try {
     const response = await axios.get(DRONES_API_URL);
-    const droneData = response.data;
-    // console.log(droneData); //debug
+    const dronesData: Record<string, DroneData> = response.data; // Enforce type safety
+    console.log(dronesData); // Debugging output
 
-    drones.value = droneData.map(
-      (drone: {
-        id: number;
-        available: boolean;
-        batteryLevel: number;
-        position: Position; // Position, matching the class
-        velocity: { x: number; y: number; z: number };
-      }) =>
-        new Drone(
-          drone.id,
-          drone.available,
-          [], // Pass an empty array for assignedPoints (or actual data if available)
-          drone.batteryLevel,
-          drone.position,
-          drone.velocity
-        )
+    // Map drones_data structure to Drone instances
+    drones.value = Object.entries(dronesData).map(([id, data]) =>
+      new Drone(
+        parseInt(id), // Drone ID
+        "Unknown", // Assume drones are available unless there's additional info
+        [], // Empty assignedPoints (or modify if necessary)
+        data.bat_level, // Battery Level
+        { x: data.pos_x, y: data.pos_y, z: data.pos_z }, // Position
+        { x: data.vel_x, y: data.vel_y, z: data.vel_z } // Velocity
+      )
     );
 
     console.log('Drones data updated:', drones.value);
@@ -129,7 +134,7 @@ onUnmounted(() => {
 });
 
 const availableDronesCount = computed(() =>
-  drones.value.filter((drone) => drone.available).length
+  drones.value.filter((drone) => drone.status === "available").length
 );
 
 const rows = 8;
@@ -224,7 +229,7 @@ const toggleCell = (index: number) => {
       });
     }
   } else if (currentMode.value === 'points') {
-    const availableDrones = drones.value.filter((drone) => drone.available);
+    const availableDrones = drones.value.filter((drone) => drone.status === "available");
     const usedDroneIds = new Set(dronePoints.value.map((dp) => dp.droneId));
     const availableDroneIds = availableDrones
       .map((drone) => drone.id)
@@ -324,7 +329,7 @@ const completePath = () => {
     drones.value.forEach((drone) => drone.assignPoints([]));
     dronePoints.value.forEach((dronePoint) => {
       const drone = drones.value.find((d) => d.id === dronePoint.droneId);
-      if (drone && drone.available) {
+      if (drone && drone.status === "available") {
         drone.assignPoints([dronePoint.point]);
       }
     });
