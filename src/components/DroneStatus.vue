@@ -262,6 +262,6 @@ const startResize = (event: MouseEvent) => {
   position: absolute;
   bottom: 0;
   right: 0;
-  cursor: ew-resize;
+  cursor: nesw-resize;
 }
 </style>
