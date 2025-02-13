@@ -13,7 +13,7 @@
     </div>
 
     <!-- Drone Status Overview -->
-    <DroneStatus :drones="drones" />
+
 
     <!-- Grid container with overlay for lines -->
     <div
@@ -57,6 +57,7 @@
       <button @click="resetPath" class="control-button">Reset</button>
       <button @click="completePath" class="control-button">Done</button>
     </div>
+    <DroneStatus :drones="drones" />
   </div>
 </template>
 
@@ -72,17 +73,12 @@ import {
 import DroneStatus from '../components/DroneStatus.vue';
 import Drone from '../models/Drone';
 
-const DRONES_API_URL = 'http://145.94.63.15:3000/api/drones';
+const DRONES_API_URL = 'http://145.94.138.184:3000/api/drones';
 const POLLING_INTERVAL = 100;
 
 const drones = ref<Drone[]>([]);
 
 
-// interface Position {
-//   x: number;
-//   y: number;
-//   z: number;
-// }
 
 // Define the expected structure of the incoming drone data
 interface DroneData {
