@@ -4,8 +4,8 @@
     :style="{
       top: position.top,
       left: position.left,
-      width: size.width,
-      height: isMinimized ? '50px' : size.height
+      width: isMinimized ? '250px' : size.width,
+      height: isMinimized ? '75px' : size.height
     }"
   >
     <div class="drone-status-header" @mousedown="startDrag" @mousedown.stop>
