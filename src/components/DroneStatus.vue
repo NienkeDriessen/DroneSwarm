@@ -8,7 +8,7 @@
       height: isMinimized ? '75px' : size.height
     }"
   >
-    <div class="drone-status-header" @mousedown="startDrag" @mousedown.stop>
+    <div class="drone-status-header" @mousedown="startDrag">
       <h3>Drone Status</h3>
       <button @click.stop="toggleMinimize">
         {{ isMinimized ? 'Expand' : 'Minimise' }}
@@ -72,19 +72,15 @@ const toggleMinimize = () => {
 };
 
 const startDrag = (event: MouseEvent) => {
-  // Listen on the header only.
-  const currentTarget = event.currentTarget as HTMLElement | null;
-  if (!currentTarget) return;
-  const element = currentTarget.parentElement;
-  if (!element) return;
-  const rect = element.getBoundingClientRect();
-  const offsetX = event.clientX - rect.left;
-  const offsetY = event.clientY - rect.top;
+  const initialX = event.clientX;
+  const initialY = event.clientY;
+  const startTop = parseInt(position.value.top, 10);
+  const startLeft = parseInt(position.value.left, 10);
 
   const onMouseMove = (moveEvent: MouseEvent) => {
     position.value = {
-      top: `${moveEvent.clientY - offsetY}px`,
-      left: `${moveEvent.clientX - offsetX}px`,
+      top: `${startTop + (moveEvent.clientY - initialY)}px`,
+      left: `${startLeft + (moveEvent.clientX - initialX)}px`
     };
   };
 
@@ -127,69 +123,70 @@ const startResize = (event: MouseEvent) => {
 <style scoped>
 .drone-status-container {
   position: absolute;
-  padding: 15px;
-  border: 1px solid #ddd;
+  border: 0px solid #ddd;
   border-radius: 8px;
   background-color: #fff;
-  max-width: 90%;
-  margin: 20px auto;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-  overflow: auto;
+  overflow: hidden;
+  max-width: 90%;
 }
 
 .drone-status-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  padding: 8px 12px;
+  background-color: #007bff;
+  color: #fff;
   cursor: move;
+  user-select: none;
 }
 
 .drone-status-header h3 {
-  margin: 0;
   font-size: 16px;
-  color: #333;
+  color: #fff;
 }
 
 .drone-status-header button {
-  padding: 5px 10px;
-  font-size: 14px;
-  background-color: #007bff;
+  background-color: #0056b3;
   color: #fff;
   border: none;
+  padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
 .drone-status-header button:hover {
   background-color: #0056b3;
 }
 
+/* Added scroll slider styles to .drone-status */
 .drone-status {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  grid-gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-gap: 10px 2%;
+  overflow-y: auto;
+  max-height: calc(100% - 50px); /* Adjust based on header height */
 }
 
 .drone-box {
-  padding: 8px;
+  padding: 4px;
   border: 1px solid #ddd;
   border-radius: 6px;
   background-color: #f9f9f9;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 1px;
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .drone-box.available {
-  border: 1px solid #4caf50;
+  border: 2px solid #4caf50;
   background-color: #e8f5e9;
 }
 
 .drone-box.unavailable {
-  border: 1px solid #f44336;
+  border: 2px solid #f44336;
   background-color: #ffebee;
 }
 
@@ -222,12 +219,12 @@ const startResize = (event: MouseEvent) => {
 }
 
 .drone-status-text {
-  font-size: 12px;
+  font-size: 11px;
   color: #555;
 }
 
 .drone-details {
-  font-size: 12px;
+  font-size: 11px;
   color: #444;
 }
 

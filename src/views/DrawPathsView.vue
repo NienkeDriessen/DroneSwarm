@@ -58,6 +58,7 @@
       <button @click="completePath" class="control-button">Done</button>
     </div>
     <DroneStatus :drones="drones" />
+    <DroneRadar :drones="drones" />
   </div>
 </template>
 
@@ -71,10 +72,12 @@ import {
   type Coordinate,
 } from '../assets/GeometryTools';
 import DroneStatus from '../components/DroneStatus.vue';
+import DroneRadar from '../components/DroneRadar.vue';
 import Drone from '../models/Drone';
 
-const DRONES_API_URL = 'http://145.94.138.184:3000/api/drones';
-const POLLING_INTERVAL = 100;
+
+const DRONES_API_URL = 'http://145.94.139.79:3000/api/drones';
+const POLLING_INTERVAL = 200;
 
 const drones = ref<Drone[]>([]);
 

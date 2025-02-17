@@ -74,27 +74,6 @@ def update_drones():
     return jsonify({"message": "Data updated successfully!"}), 200
 
 
-def simulate_drone_status_changes():
-    """Simulate updates to drone battery, position, and velocity."""
-    while True:
-        time.sleep(1)  # Wait for 5 seconds
-        with lock:
-            for drone in drones_data:
-                # Update battery level
-                drone["batteryLevel"] = max(0, drone["batteryLevel"] - random.randint(1, 5))
-
-                # Update position (simulate random movement)
-                drone["position"]["x"] += random.uniform(-0.1, 0.1)
-                drone["position"]["y"] += random.uniform(-0.1, 0.1)
-                drone["position"]["z"] += random.uniform(-0.1, 0.1)
-
-                # Update velocity
-                drone["velocity"]["x"] = random.uniform(-0.2, 0.2)
-                drone["velocity"]["y"] = random.uniform(-0.2, 0.2)
-                drone["velocity"]["z"] = random.uniform(-0.2, 0.2)
-
-                print(f"Updated Drone {drone['id']}: {drone}")
-
 
 def simulate_drone_removal():
     """Simulate removal of drones from the pool."""
@@ -108,18 +87,18 @@ def simulate_drone_removal():
 
 def simulate_drone_status_changes():
     while True:
-        time.sleep(1)
+        time.sleep(0.5)
         with lock:
             for drone in drones_data.values():
-                drone["bat_level"] = max(0, drone["bat_level"] - random.randint(1, 5))
-                drone["pos_x"] += random.uniform(-0.1, 0.1)
-                drone["pos_y"] += random.uniform(-0.1, 0.1)
-                drone["pos_z"] += random.uniform(-0.1, 0.1)
+                drone["bat_level"] = max(0, drone["bat_level"] - random.randint(0, 1))
+                drone["pos_x"] += random.uniform(-2, 2)
+                drone["pos_y"] += random.uniform(-2, 2)
+                drone["pos_z"] += random.uniform(-2, 2)
                 drone["vel_x"] = random.uniform(-0.2, 0.2)
                 drone["vel_y"] = random.uniform(-0.2, 0.2)
                 drone["vel_z"] = random.uniform(-0.2, 0.2)
 
-threading.Thread(target=simulate_drone_status_changes, daemon=True).start()
+# threading.Thread(target=simulate_drone_status_changes, daemon=True).start()
 
 # Start the background threads
 # threading.Thread(target=simulate_drone_unavailability, daemon=True).start()
