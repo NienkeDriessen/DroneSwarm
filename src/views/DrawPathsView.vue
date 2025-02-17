@@ -58,7 +58,7 @@
       <button @click="completePath" class="control-button">Done</button>
     </div>
     <DroneStatus :drones="drones" />
-    <DroneRadar :drones="drones" />
+    <DroneRadar3 :drones="drones" />
   </div>
 </template>
 
@@ -72,7 +72,8 @@ import {
   type Coordinate,
 } from '../assets/GeometryTools';
 import DroneStatus from '../components/DroneStatus.vue';
-import DroneRadar from '../components/DroneRadar.vue';
+// import DroneRadar from '../components/DroneRadar.vue';
+import DroneRadar3 from '../components/DroneRadar3.vue';
 import Drone from '../models/Drone';
 
 

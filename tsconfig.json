@@ -11,8 +11,4 @@
       "path": "./tsconfig.vitest.json"
     }
   ],
-    "compilerOptions": {
-    // other options
-      "allowSyntheticDefaultImports": true
-  }
 }

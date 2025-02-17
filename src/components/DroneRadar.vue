@@ -72,7 +72,7 @@ const startDrag = (event: MouseEvent) => {
 const plotlyContainer = ref<HTMLElement | null>(null);
 
 // Base layout with fixed axes extents.
-const layout = {
+const layout: Partial<Plotly.Layout> = {
   margin: { l: 0, r: 0, b: 0, t: 0 },
   scene: {
     xaxis: { title: 'X', range: [-50, 50] },
@@ -97,8 +97,6 @@ onMounted(() => {
           mode: 'markers',
           type: 'scatter3d',
           marker: { size: 4, color: 'rgb(23, 190, 207)' },
-          xaxis: {  uirevision: 'time'  },
-          yaxis: {  uirevision: 'time'  },
         }
       ],
       layout
@@ -121,8 +119,6 @@ watch(
             mode: 'markers',
             type: 'scatter3d',
             marker: { size: 4, color: 'rgb(23, 190, 207)' },
-            xaxis: {  uirevision: 'time'  },
-            yaxis: {  uirevision: 'time'  },
           }
         ],
         layout
