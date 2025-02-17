@@ -78,7 +78,7 @@ import Drone from '../models/Drone';
 
 
 const DRONES_API_URL = 'http://145.94.139.79:3000/api/drones';
-const POLLING_INTERVAL = 200;
+const POLLING_INTERVAL = 50;
 
 const drones = ref<Drone[]>([]);
 

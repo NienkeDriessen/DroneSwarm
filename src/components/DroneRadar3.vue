@@ -14,8 +14,7 @@
         {{ isMinimized ? 'Maximize' : 'Minimise' }}
       </button>
     </div>
-    <div v-if="!isMinimized" class="drone-radar-content">
-      <!-- Custom 3D scatter plot rendered with Three.js -->
+    <div class="drone-radar-content" v-show="!isMinimized">
       <div ref="threeContainer" style="width: 100%; height: 100%; position: relative;"></div>
     </div>
   </div>
@@ -28,37 +27,30 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
-const props = defineProps<{
-  drones: Drone[];
-}>();
+const props = defineProps<{ drones: Drone[] }>();
 
 // Window controls
 const isMinimized = ref(false);
 const position = ref({ top: '50px', left: '50px' });
 const containerSize = ref({ width: '500px', height: '500px' });
 
-const toggleMinimize = () => {
-  isMinimized.value = !isMinimized.value;
-};
+const toggleMinimize = () => { isMinimized.value = !isMinimized.value; };
 
 const startDrag = (event: MouseEvent) => {
   const initialX = event.clientX;
   const initialY = event.clientY;
   const startTop = parseInt(position.value.top, 10);
   const startLeft = parseInt(position.value.left, 10);
-
   const onMouseMove = (moveEvent: MouseEvent) => {
     position.value = {
       top: `${startTop + (moveEvent.clientY - initialY)}px`,
       left: `${startLeft + (moveEvent.clientX - initialX)}px`
     };
   };
-
   const onMouseUp = () => {
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
   };
-
   document.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mouseup', onMouseUp);
 };
@@ -70,63 +62,163 @@ let camera: THREE.PerspectiveCamera;
 let renderer: THREE.WebGLRenderer;
 let labelRenderer: CSS2DRenderer;
 let controls: OrbitControls;
-let scatterPoints: THREE.Points;
+let fixedBoxHelper: THREE.Box3Helper;
+let arrowsGroup: THREE.Group;  // Group that holds arrows and points
 
 function createAxisLabel(text: string, pos: THREE.Vector3): CSS2DObject {
   const div = document.createElement('div');
   div.className = 'axis-label';
+  div.style.fontSize = '10px';
   div.textContent = text;
   const label = new CSS2DObject(div);
   label.position.copy(pos);
   return label;
 }
 
-function createScatterGeometry(): THREE.BufferGeometry {
-  const geometry = new THREE.BufferGeometry();
-  const positions: number[] = [];
-  props.drones.forEach((drone) => {
-    positions.push(drone.position.x, drone.position.y, drone.position.z);
+function updateArrows() {
+  // Clear existing objects from the group.
+  while (arrowsGroup.children.length > 0) {
+    arrowsGroup.remove(arrowsGroup.children[0]);
+  }
+
+  // Create arrow (cursor) and point (sphere) for each drone.
+  props.drones.forEach(drone => {
+    // Normalize the velocity vector.
+    const velocity = new THREE.Vector3(drone.velocity.x, drone.velocity.y, drone.velocity.z);
+    const direction = velocity.length() === 0 ? new THREE.Vector3(1, 0, 0) : velocity.normalize();
+    const pos = new THREE.Vector3(drone.position.x, drone.position.y, drone.position.z);
+
+    // Arrow (cursor) with lower opacity.
+    const arrow = new THREE.ArrowHelper(direction, pos, 5, 0x00ffff, 4, 3);
+    (arrow.cone.material as THREE.MeshBasicMaterial).transparent = true;
+    (arrow.cone.material as THREE.MeshBasicMaterial).opacity = 0.8;
+    (arrow.line.material as THREE.LineBasicMaterial).transparent = true;
+    (arrow.line.material as THREE.LineBasicMaterial).opacity = 0.8;
+    arrowsGroup.add(arrow);
+
+    // Sphere (point) with full opacity.
+    const sphereGeometry = new THREE.SphereGeometry(2, 8, 8);
+    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    sphere.position.copy(pos);
+    arrowsGroup.add(sphere);
   });
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  return geometry;
 }
 
 onMounted(() => {
   if (threeContainer.value) {
     // Scene & Camera
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, threeContainer.value.clientWidth / threeContainer.value.clientHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(
+      75,
+      threeContainer.value.clientWidth / threeContainer.value.clientHeight,
+      0.1,
+      1000
+    );
     camera.position.set(0, 0, 100);
 
-    // Renderer
+    // Renderer setup
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(threeContainer.value.clientWidth, threeContainer.value.clientHeight);
     threeContainer.value.appendChild(renderer.domElement);
 
-    // Label Renderer for axis labels
+    // CSS2D Label Renderer setup
     labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(threeContainer.value.clientWidth, threeContainer.value.clientHeight);
     labelRenderer.domElement.style.position = 'absolute';
     labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
     threeContainer.value.appendChild(labelRenderer.domElement);
 
-    // Controls for rotation, not forcing a fixed rotation
+    // OrbitControls
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Axes helper and custom axis labels (fixed axis extents)
-    const axesLength = 50;
+    // Axes helper and labels
+    const axesLength = 20;
     const axesHelper = new THREE.AxesHelper(axesLength);
     scene.add(axesHelper);
     scene.add(createAxisLabel('X', new THREE.Vector3(axesLength + 5, 0, 0)));
     scene.add(createAxisLabel('Y', new THREE.Vector3(0, axesLength + 5, 0)));
     scene.add(createAxisLabel('Z', new THREE.Vector3(0, 0, axesLength + 5)));
 
-    // Scatter points
-    const geometry = createScatterGeometry();
-    const material = new THREE.PointsMaterial({ color: 0x17BECB, size: 2 });
-    scatterPoints = new THREE.Points(geometry, material);
-    scene.add(scatterPoints);
+    // Create and add a single arrowsGroup to the scene.
+    arrowsGroup = new THREE.Group();
+    scene.add(arrowsGroup);
+    updateArrows();
+
+    // Create a fixed bounding box.
+    const domainMin = new THREE.Vector3(-50, -50, -50);
+    const domainMax = new THREE.Vector3(50, 50, 50);
+    const box = new THREE.Box3(domainMin, domainMax);
+    fixedBoxHelper = new THREE.Box3Helper(box, 0xff0000);
+    scene.add(fixedBoxHelper);
+
+    // Create coordinate labels at each corner.
+    const corners = [
+      new THREE.Vector3(domainMin.x, domainMin.y, domainMin.z),
+      new THREE.Vector3(domainMax.x, domainMin.y, domainMin.z),
+      new THREE.Vector3(domainMin.x, domainMax.y, domainMin.z),
+      new THREE.Vector3(domainMax.x, domainMax.y, domainMin.z),
+      new THREE.Vector3(domainMin.x, domainMin.y, domainMax.z),
+      new THREE.Vector3(domainMax.x, domainMin.y, domainMax.z),
+      new THREE.Vector3(domainMin.x, domainMax.y, domainMax.z),
+      new THREE.Vector3(domainMax.x, domainMax.y, domainMax.z)
+    ];
+    corners.forEach(corner => {
+      const labelText = `(${corner.x}, ${corner.y}, ${corner.z})`;
+      const label = createAxisLabel(labelText, corner);
+      label.position.add(new THREE.Vector3(2, 2, 2));
+      scene.add(label);
+    });
+
+    // Create grid helpers on all 6 faces.
+    const gridSize = 100, divisions = 10, color = 0xff0000, gridOpacity = 0.3;
+    const mid = new THREE.Vector3(
+      (domainMin.x + domainMax.x) / 2,
+      (domainMin.y + domainMax.y) / 2,
+      (domainMin.z + domainMax.z) / 2
+    );
+
+    const gridXMin = new THREE.GridHelper(gridSize, divisions, color, color);
+    gridXMin.material.opacity = gridOpacity;
+    gridXMin.material.transparent = true;
+    gridXMin.rotation.z = -Math.PI / 2;
+    gridXMin.position.set(domainMin.x, mid.y, mid.z);
+    scene.add(gridXMin);
+
+    const gridXMax = new THREE.GridHelper(gridSize, divisions, color, color);
+    gridXMax.material.opacity = gridOpacity;
+    gridXMax.material.transparent = true;
+    gridXMax.rotation.z = -Math.PI / 2;
+    gridXMax.position.set(domainMax.x, mid.y, mid.z);
+    scene.add(gridXMax);
+
+    const gridYMin = new THREE.GridHelper(gridSize, divisions, color, color);
+    gridYMin.material.opacity = gridOpacity;
+    gridYMin.material.transparent = true;
+    gridYMin.position.set(mid.x, domainMin.y, mid.z);
+    scene.add(gridYMin);
+
+    const gridYMax = new THREE.GridHelper(gridSize, divisions, color, color);
+    gridYMax.material.opacity = gridOpacity;
+    gridYMax.material.transparent = true;
+    gridYMax.position.set(mid.x, domainMax.y, mid.z);
+    scene.add(gridYMax);
+
+    const gridZMin = new THREE.GridHelper(gridSize, divisions, color, color);
+    gridZMin.material.opacity = gridOpacity;
+    gridZMin.material.transparent = true;
+    gridZMin.rotation.x = -Math.PI / 2;
+    gridZMin.position.set(mid.x, mid.y, domainMin.z);
+    scene.add(gridZMin);
+
+    const gridZMax = new THREE.GridHelper(gridSize, divisions, color, color);
+    gridZMax.material.opacity = gridOpacity;
+    gridZMax.material.transparent = true;
+    gridZMax.rotation.x = -Math.PI / 2;
+    gridZMax.position.set(mid.x, mid.y, domainMax.z);
+    scene.add(gridZMax);
 
     // Animation loop
     function animate() {
@@ -139,17 +231,12 @@ onMounted(() => {
   }
 });
 
-// Update scatter points when drone data changes
+// Update arrows when drone data changes.
 watch(
   () => JSON.stringify(props.drones),
   () => {
-    if (scene && scatterPoints) {
-      const positions: number[] = [];
-      props.drones.forEach((drone) => {
-        positions.push(drone.position.x, drone.position.y, drone.position.z);
-      });
-      scatterPoints.geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      scatterPoints.geometry.attributes.position.needsUpdate = true;
+    if (arrowsGroup) {
+      updateArrows();
     }
   }
 );

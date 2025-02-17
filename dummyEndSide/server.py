@@ -38,7 +38,20 @@ drones_data = {
         "bat_level": 50,
         "pos_x": 0.5, "pos_y": 0.5, "pos_z": 0.0,
         "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
-    }
+    },
+
+    7: {
+        "bat_level": 75,
+        "pos_x": 1.5, "pos_y": -2.0, "pos_z": 0.0,
+        "vel_x": 0.2, "vel_y": 0.0, "vel_z": 0.0
+    },
+    8: {
+        "bat_level": 50,
+        "pos_x": 0.5, "pos_y": 0.5, "pos_z": 0.0,
+        "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
+    },
+
+
 }
     # {
     #     "id": 7,
@@ -87,13 +100,13 @@ def simulate_drone_removal():
 
 def simulate_drone_status_changes():
     while True:
-        time.sleep(0.5)
+        time.sleep(0.1)
         with lock:
             for drone in drones_data.values():
                 drone["bat_level"] = max(0, drone["bat_level"] - random.randint(0, 1))
-                drone["pos_x"] += random.uniform(-2, 2)
-                drone["pos_y"] += random.uniform(-2, 2)
-                drone["pos_z"] += random.uniform(-2, 2)
+                drone["pos_x"] += random.uniform(-1, 1)
+                drone["pos_y"] += random.uniform(-1, 1)
+                drone["pos_z"] += random.uniform(-1, 1)
                 drone["vel_x"] = random.uniform(-0.2, 0.2)
                 drone["vel_y"] = random.uniform(-0.2, 0.2)
                 drone["vel_z"] = random.uniform(-0.2, 0.2)
