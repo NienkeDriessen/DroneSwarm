@@ -77,7 +77,7 @@ import DroneRadar3 from '../components/DroneRadar3.vue';
 import Drone from '../models/Drone';
 
 
-const DRONES_API_URL = 'http://145.94.139.79:3000/api/drones';
+const DRONES_API_URL = 'http://145.94.161.71:3000/api/drones';
 const POLLING_INTERVAL = 50;
 
 const drones = ref<Drone[]>([]);
