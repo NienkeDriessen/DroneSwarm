@@ -11,7 +11,7 @@
     <div class="drone-status-header" @mousedown="startDrag">
       <h3>Drone Status</h3>
       <button @click.stop="toggleMinimize">
-        {{ isMinimized ? 'Expand' : 'Minimise' }}
+        {{ isMinimized ? 'Maximize' : 'Minimise' }}
       </button>
     </div>
     <div v-if="!isMinimized" class="drone-status">
@@ -31,14 +31,14 @@
         <div class="drone-details">
           <div class="battery-level">Battery: {{ drone.batteryLevel }}%</div>
           <div class="position">
-            Position: ({{ drone.position.x.toFixed(3) }},
-            {{ drone.position.y.toFixed(3) }},
-            {{ drone.position.z.toFixed(3) }})
+            Position: ({{ drone.position.x.toFixed(2) }},
+            {{ drone.position.y.toFixed(2) }},
+            {{ drone.position.z.toFixed(2) }})
           </div>
           <div class="velocity">
-            Velocity: ({{ drone.velocity.x.toFixed(3) }},
-            {{ drone.velocity.y.toFixed(3) }},
-            {{ drone.velocity.z.toFixed(3) }})
+            Velocity: ({{ drone.velocity.x.toFixed(2) }},
+            {{ drone.velocity.y.toFixed(2) }},
+            {{ drone.velocity.z.toFixed(2) }})
           </div>
         </div>
         <div v-if="drone.assignedPoints && drone.assignedPoints.length > 0" class="assigned-points">

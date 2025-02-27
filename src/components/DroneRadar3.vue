@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import Drone from '../models/Drone';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -89,7 +89,7 @@ function updateArrows() {
     const pos = new THREE.Vector3(drone.position.x, drone.position.y, drone.position.z);
 
     // Arrow (cursor) with lower opacity.
-    const arrow = new THREE.ArrowHelper(direction, pos, 5, 0x00ffff, 4, 3);
+    const arrow = new THREE.ArrowHelper(direction, pos, 0.12, 0x00ffff, 0.06, 0.06);
     (arrow.cone.material as THREE.MeshBasicMaterial).transparent = true;
     (arrow.cone.material as THREE.MeshBasicMaterial).opacity = 0.8;
     (arrow.line.material as THREE.LineBasicMaterial).transparent = true;
@@ -97,7 +97,7 @@ function updateArrows() {
     arrowsGroup.add(arrow);
 
     // Sphere (point) with full opacity.
-    const sphereGeometry = new THREE.SphereGeometry(2, 8, 8);
+    const sphereGeometry = new THREE.SphereGeometry(0.05, 8, 8);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.position.copy(pos);
@@ -115,7 +115,9 @@ onMounted(() => {
       0.1,
       1000
     );
-    camera.position.set(0, 0, 100);
+    camera.position.set(-4, 1, -2);
+    // Change the rotation order if needed to "YXZ" (optional)
+    camera.rotation.order = "YXZ";
 
     // Renderer setup
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -134,27 +136,34 @@ onMounted(() => {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Axes helper and labels
-    const axesLength = 20;
-    const axesHelper = new THREE.AxesHelper(axesLength);
-    scene.add(axesHelper);
-    scene.add(createAxisLabel('X', new THREE.Vector3(axesLength + 5, 0, 0)));
-    scene.add(createAxisLabel('Y', new THREE.Vector3(0, axesLength + 5, 0)));
-    scene.add(createAxisLabel('Z', new THREE.Vector3(0, 0, axesLength + 5)));
+    // Create a parent group to hold all scene objects.
+    const sceneGroup = new THREE.Group();
+    // For example, rotate the entire group by -90° around X to mitigate gimbal lock.
+    sceneGroup.rotation.x = -Math.PI / 2;
+    scene.add(sceneGroup);
 
-    // Create and add a single arrowsGroup to the scene.
+    // Axes helper and labels (added to the parent group)
+    const axesLength = 1;
+    const axesHelper = new THREE.AxesHelper(axesLength);
+    axesHelper.rotation.set(0, 0, 0);
+    sceneGroup.add(axesHelper);
+    sceneGroup.add(createAxisLabel('X', new THREE.Vector3(axesLength, 0, 0)));
+    sceneGroup.add(createAxisLabel('Y', new THREE.Vector3(0, axesLength, 0)));
+    sceneGroup.add(createAxisLabel('Z', new THREE.Vector3(0, 0, axesLength)));
+
+    // Create and add a single arrowsGroup to the sceneGroup.
     arrowsGroup = new THREE.Group();
-    scene.add(arrowsGroup);
+    sceneGroup.add(arrowsGroup);
     updateArrows();
 
-    // Create a fixed bounding box.
-    const domainMin = new THREE.Vector3(-50, -50, -50);
-    const domainMax = new THREE.Vector3(50, 50, 50);
+    // Create a fixed bounding box (added to the parent group)
+    const domainMin = new THREE.Vector3(-1.95, -1.7, 0);
+    const domainMax = new THREE.Vector3(1.45, 1.8, 2.5);
     const box = new THREE.Box3(domainMin, domainMax);
     fixedBoxHelper = new THREE.Box3Helper(box, 0xff0000);
-    scene.add(fixedBoxHelper);
+    sceneGroup.add(fixedBoxHelper);
 
-    // Create coordinate labels at each corner.
+    // Create coordinate labels at each corner (added to the parent group).
     const corners = [
       new THREE.Vector3(domainMin.x, domainMin.y, domainMin.z),
       new THREE.Vector3(domainMax.x, domainMin.y, domainMin.z),
@@ -165,15 +174,17 @@ onMounted(() => {
       new THREE.Vector3(domainMin.x, domainMax.y, domainMax.z),
       new THREE.Vector3(domainMax.x, domainMax.y, domainMax.z)
     ];
+
     corners.forEach(corner => {
       const labelText = `(${corner.x}, ${corner.y}, ${corner.z})`;
       const label = createAxisLabel(labelText, corner);
-      label.position.add(new THREE.Vector3(2, 2, 2));
-      scene.add(label);
+      label.position.add(new THREE.Vector3(0.1, 0.1, 0.1));
+      sceneGroup.add(label);
     });
 
-    // Create grid helpers on all 6 faces.
-    const gridSize = 100, divisions = 10, color = 0xff0000, gridOpacity = 0.3;
+    // Create grid helpers on all 6 faces (all added to sceneGroup).
+    const gridSize = 3.4,
+    divisions = 15, color = 0xff0000, gridOpacity = 0.3;
     const mid = new THREE.Vector3(
       (domainMin.x + domainMax.x) / 2,
       (domainMin.y + domainMax.y) / 2,
@@ -185,40 +196,40 @@ onMounted(() => {
     gridXMin.material.transparent = true;
     gridXMin.rotation.z = -Math.PI / 2;
     gridXMin.position.set(domainMin.x, mid.y, mid.z);
-    scene.add(gridXMin);
+    sceneGroup.add(gridXMin);
 
     const gridXMax = new THREE.GridHelper(gridSize, divisions, color, color);
     gridXMax.material.opacity = gridOpacity;
     gridXMax.material.transparent = true;
     gridXMax.rotation.z = -Math.PI / 2;
     gridXMax.position.set(domainMax.x, mid.y, mid.z);
-    scene.add(gridXMax);
+    sceneGroup.add(gridXMax);
 
     const gridYMin = new THREE.GridHelper(gridSize, divisions, color, color);
     gridYMin.material.opacity = gridOpacity;
     gridYMin.material.transparent = true;
     gridYMin.position.set(mid.x, domainMin.y, mid.z);
-    scene.add(gridYMin);
+    sceneGroup.add(gridYMin);
 
     const gridYMax = new THREE.GridHelper(gridSize, divisions, color, color);
     gridYMax.material.opacity = gridOpacity;
     gridYMax.material.transparent = true;
     gridYMax.position.set(mid.x, domainMax.y, mid.z);
-    scene.add(gridYMax);
+    sceneGroup.add(gridYMax);
 
     const gridZMin = new THREE.GridHelper(gridSize, divisions, color, color);
     gridZMin.material.opacity = gridOpacity;
     gridZMin.material.transparent = true;
     gridZMin.rotation.x = -Math.PI / 2;
     gridZMin.position.set(mid.x, mid.y, domainMin.z);
-    scene.add(gridZMin);
+    sceneGroup.add(gridZMin);
 
     const gridZMax = new THREE.GridHelper(gridSize, divisions, color, color);
     gridZMax.material.opacity = gridOpacity;
     gridZMax.material.transparent = true;
     gridZMax.rotation.x = -Math.PI / 2;
     gridZMax.position.set(mid.x, mid.y, domainMax.z);
-    scene.add(gridZMax);
+    sceneGroup.add(gridZMax);
 
     // Animation loop
     function animate() {

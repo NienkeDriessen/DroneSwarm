@@ -12,9 +12,6 @@
       </select>
     </div>
 
-    <!-- Drone Status Overview -->
-
-
     <!-- Grid container with overlay for lines -->
     <div
       class="grid-container"
@@ -76,13 +73,10 @@ import DroneStatus from '../components/DroneStatus.vue';
 import DroneRadar3 from '../components/DroneRadar3.vue';
 import Drone from '../models/Drone';
 
-
-const DRONES_API_URL = 'http://145.94.161.71:3000/api/drones';
+const DRONES_API_URL = 'http://145.94.63.16:3000/api/drones';
 const POLLING_INTERVAL = 50;
 
 const drones = ref<Drone[]>([]);
-
-
 
 // Define the expected structure of the incoming drone data
 interface DroneData {
@@ -143,14 +137,15 @@ const maxGridWidth = 700;
 const maxGridHeight = 500;
 const gap = 1;
 const maxStepSize = 0.5;
+
 const cellSize = Math.min(
   (maxGridWidth - gap * (cols - 1)) / cols,
   (maxGridHeight - gap * (rows - 1)) / rows
 );
 const gridWidth = cellSize * cols + gap * (cols - 1);
 const gridHeight = cellSize * rows + gap * (rows - 1);
-
 const grid = ref(Array(rows * cols).fill({ active: false }));
+
 const pathCoordinates = ref<Coordinate[]>([]);
 const waypoints = ref<Coordinate[]>([]);
 const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([]);
@@ -319,6 +314,10 @@ const completePath = () => {
 
     console.log('Path completed with coordinates:', pathCoordinates.value);
     console.log('Path waypoints including intermediate points:', waypoints.value);
+
+    // Send the mapped coordinates to the drones.
+    sendPathCoordinates();
+
     alert('Path and waypoints are ready!');
   } else if (currentMode.value === 'points') {
     if (dronePoints.value.length > availableDronesCount.value) {
@@ -340,6 +339,73 @@ const completePath = () => {
     alert('Invalid mode selected!');
   }
 };
+
+// ----- New function to map and send coordinates -----
+
+// These constants define the real-life space that your UI grid maps to.
+const REAL_ORIGIN = { x: -50, y: -50 }; // Adjust origin as needed.
+const REAL_WIDTH = 100; // Total width in real-life units.
+const REAL_HEIGHT = 100; // Total height in real-life units.
+const FIXED_Z = 0; // Fixed third coordinate for 2D drawing.
+
+// Map a UI grid coordinate (with x,y) to real-life coordinates.
+function mapGridToReal(coord: Coordinate) {
+  return {
+    x: REAL_ORIGIN.x + (coord.x + 0.5) * (REAL_WIDTH / cols),
+    y: REAL_ORIGIN.y + (coord.y + 0.5) * (REAL_HEIGHT / rows),
+    z: FIXED_Z,
+  };
+}
+
+// Send the mapped path coordinates to the drones via POST.
+const sendPathCoordinates = async () => {
+  // For this example, assign each coordinate to an available drone in order.
+  const availableDrones = drones.value.filter(drone => drone.available);
+    const updates: {
+      droneId: number;
+      pos_x: number;
+      pos_y: number;
+      pos_z: number;
+      vel_x: number;
+      vel_y: number;
+      vel_z: number;
+    }[] = [];
+
+  const numUpdates = Math.min(availableDrones.length, pathCoordinates.value.length);
+    for (let i = 0; i < numUpdates; i++) {
+      const realCoord = mapGridToReal(pathCoordinates.value[i]);
+      updates.push({
+        droneId: availableDrones[i].id, // Numeric drone id.
+        pos_x: realCoord.x,
+        pos_y: realCoord.y,
+        pos_z: realCoord.z,
+        // Arbitrary velocity values.
+        vel_x: 0.0,
+        vel_y: 0.0,
+        vel_z: 0.0,
+      });
+    }
+
+  axios
+    .post(DRONES_API_URL, updates, { timeout: 2000 })
+    .then((response) => {
+      console.log(response);
+    })
+    .catch((error) => {
+      if (error.response) {
+        console.log("SERVER ERROR");
+        console.log(error.response);
+      } else if (error.request) {
+        console.log("NETWORK ERROR: " + error.message);
+        console.log(error.request);
+        console.log(error.toJSON());
+      } else {
+        console.log('ERROR', error.message);
+      }
+    });
+};
+
+// -----------------------------------------------------
 
 const router = useRouter();
 const goBack = () => {
