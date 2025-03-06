@@ -46,7 +46,7 @@ defineEmits(['select'])
 
 .shape-button {
   position: relative; /* Enables positioning for pseudo-elements */
-  background-color: #ff99ff; /* Foreground button color */
+  background-color: #6f1d77; /* Foreground button color */
   border: 4px solid #6f1d77; /* Border color */
   color: #6f1d77;
   font-size: 2rem;
@@ -54,8 +54,8 @@ defineEmits(['select'])
   padding-bottom: 10%;
   padding-right: 10%;
   margin: 1vh;
-  width: 400px;
-  height: 210px;
+  width: 35vw;
+  height: 25vh;
   cursor: pointer;
   transition:
     background-color 0.3s,
@@ -68,10 +68,10 @@ defineEmits(['select'])
 .shape-button::before {
   content: ''; /* Creates the background element */
   position: absolute;
-  top: -12px; /* Offset slightly down */
-  left: -12px; /* Offset slightly to the right */
-  width: 100%; /* Match the size of the button */
-  height: 100%;
+  top: -14px; /* Offset slightly down */
+  left: -20px; /* Offset slightly to the right */
+  width: 103%; /* Match the size of the button */
+  height: 103%;
   background-color: #f7ecd8; /* Background shape color */
   border: 4px solid #6f1d77;
   border-radius: 30px 0px 30px 0px; /* Match the shape of the button */
