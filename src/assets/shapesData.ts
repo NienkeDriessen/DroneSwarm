@@ -9,23 +9,28 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
   Line: {
     image: 'path/to/line_image.png',
     path: [
+      [0, 0, 1.25],
       [0, -1, 1.5],
       [0, 0, 1.5],
       [0, 1, 1.5],
+      [0, 0, 1.25],
     ],
   },
   Triangle: {
     image: 'path/to/triangle_image.png',
     path: [
+      [0, 0, 1.25],
       [0, -0.5, 1],
       [0, 0, 1.8],
       [0, 0.5, 1],
       [0, -0.5, 1],
+      [0, 0, 1.25],
     ],
   },
   Circle: {
     image: 'path/to/circle_image.png',
     path: [
+      [0, 0, 1.25],
       [0, 0, 2],
       [0, 0.71, 1.71],
       [0, 1, 1],
@@ -35,20 +40,24 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, -1, 0],
       [0, -0.71, 0.71],
       [0, 0, 1],
+      [0, 0, 1.25],
     ],
   },
   Square: {
     image: 'path/to/square_image.png',
     path: [
+      [0, 0, 1.25],
       [0, -0.85, 1.875],
       [0, -0.85, 0.625],
       [1, 0.85, 0.625],
       [1, 0.85, 1.875],
+      [0, 0, 1.25],
     ],
   },
   Heart: {
     image: 'path/to/square_image.png',
     path: [
+      [0, 0, 1.25],
       [0, 0, 0.31],
       [0, -0.85, 0.94],
       [0, -1.275, 1.56],
@@ -58,6 +67,7 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 1.275, 1.56],
       [0, 0.85, 0.94],
       [0, 0, 0.31],
+      [0, 0, 1.25],
     ],
   },
   Apple: {
@@ -81,6 +91,7 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
   Moon: {
     image: 'path/to/square_image.png',
     path: [
+      [0, 0, 1.25],
       [0, 0, 0.31],
       [0, -0.85, 0.625],
       [0, 0, 0.94],
@@ -93,6 +104,7 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 1.275, 0.94],
       [0, 0.85, 0.31],
       [0, 0, 0.31],
+      [0, 0, 1.25],
     ],
   },
 }

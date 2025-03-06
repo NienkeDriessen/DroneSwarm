@@ -38,10 +38,10 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 
-const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
-//const droneEndpoint = 'http://145.94.177.54:3000/api/drones'
+// const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
+const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
 
-// Helper function for generating intermediate points
+// Helper function for generating intermediate points between two defined points in the shape data
 function generateIntermediatePoints(
   droneIndex: number,
   start: { x: number; y: number; z: number },
@@ -63,7 +63,7 @@ function generateIntermediatePoints(
   return points
 }
 
-// Helper function to create an array
+// Helper function to create an array of positions
 const createDroneArray = (
   updates: { index: number; coordinate: { x: number; y: number; z: number } }[],
 ) => {
@@ -84,10 +84,17 @@ const createDroneArray = (
   return dronesArray
 }
 
-// Send 3D shape path to drones
+// Send 3D shape path to drones (for each drone it's position at the time index it is sent)
 const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
-  const maxStepSize = 0.2
+  const maxStepSize = 6
   const waypoints: { x: number; y: number; z: number }[] = []
+  const numDrones = 3 // We have to get this in stead of being hardcoded
+
+  // Generate waypoints for each drone
+  const waypointsPerDrone: { x: number; y: number; z: number }[][] = Array.from(
+    { length: numDrones },
+    () => [],
+  )
 
   for (let i = 0; i < path.length - 1; i++) {
     const start = path[i]
@@ -106,50 +113,103 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
     waypoints.push(path[path.length - 1])
   }
 
-  console.log('Sending smoothed 3D shape path to drones:', waypoints)
+  // waypoints is just an array of all the steps each drone needs to take.
+  // Now we want to have an array (size of nr of drones) of edited waypoints, all lenght (waypoints + delay * nr drones)
+  // We add for each drone, the waypoints (and prepend a static location or something)
+  // For each drone an offset of delay * index
+  // We can then access for a certain timestamp, for each drone the needed coordinates.
+  // So we need to extend the updates array to include each drone and their index and waypoint at that stepindex, in stead of the just one waypoint
+  // so maybe for each drone, updates += {index of drone, waypointsPerDrone[index of drone][stepIndex]} (or a more efficient way to code that)
+  // Extend waypoints with delays for each drone
+
+  const delay = Math.floor(waypoints.length / numDrones) // Delays for each drone in timestamps, its nr of waypoints / nr of drones
+
+  // We need to create for each drone a waiting position. Maybe just
+  const waitingPositions = createWaitingPositions(numDrones)
+  const maxLength = waypoints.length + (numDrones - 1) * delay + 5
+
+  for (let i = 0; i < numDrones; i++) {
+    const staticLocation = waitingPositions[i]
+
+    // Prepend static location for delay
+    waypointsPerDrone[i] = Array(i * delay + 5)
+      .fill(staticLocation)
+      .concat(waypoints)
+
+    // Append waiting positions until max_length is reached (and then add one more)
+    while (waypointsPerDrone[i].length <= maxLength) {
+      waypointsPerDrone[i].push(staticLocation)
+    }
+  }
 
   let stepIndex = 0
   const intervalId = setInterval(async () => {
-    if (stepIndex >= waypoints.length) {
+    if (stepIndex >= waypointsPerDrone[0].length) {
       clearInterval(intervalId)
       console.log('All waypoints sent!')
       return
     }
 
-    const currentWaypoint = waypoints[stepIndex]
-
-    const updates = [{ index: 0, coordinate: currentWaypoint }]
+    const updates = waypointsPerDrone.map((waypoints, index) => ({
+      index,
+      coordinate: waypoints[stepIndex] || waypoints[waypoints.length - 1], // Repeat last position if out of range
+    }))
 
     const dronesArray = createDroneArray(updates)
 
-    // try {
-    //   // Send data to the endpoint
-    //   await axios.post(droneEndpoint, dronesArray)
-    //   console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
-    // } catch (error) {
-    //   console.error('Error sending data to drone endpoint:', error)
-    // }
+    console.log('dronesArray is : ', dronesArray)
 
-    axios
-      .post(droneEndpoint, dronesArray, { timeout: 2000 })
-      .then((response) => {
-        console.log(response)
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log('SERVER ERROR')
-          console.log(error.response)
-        } else if (error.request) {
-          console.log('NETWORK ERROR: ' + error.message)
-          console.log(error.request)
-          console.log(error.toJSON())
-        } else {
-          console.log('ERROR', error.message)
-        }
-      })
+    try {
+      // Send data to the endpoint
+      await axios.post(droneEndpoint, dronesArray)
+      console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
+    } catch (error) {
+      console.error('Error sending data to drone endpoint:', error)
+    }
+    console.log('dummy sending drone array: ', dronesArray)
+
+    // axios
+    //   .post(droneEndpoint, dronesArray, { timeout: 2000 })
+    //   .then((response) => {
+    //     console.log(response)
+    //   })
+    //   .catch((error) => {
+    //     if (error.response) {
+    //       console.log('SERVER ERROR')
+    //       console.log(error.response)
+    //     } else if (error.request) {
+    //       console.log('NETWORK ERROR: ' + error.message)
+    //       console.log(error.request)
+    //       console.log(error.toJSON())
+    //     } else {
+    //       console.log('ERROR', error.message)
+    //     }
+    //   })
 
     stepIndex++
   }, 1000)
+}
+
+const createWaitingPositions = (numDrones: number) => {
+  const positions = []
+  let x = 1
+  let y = -1
+  const yIncrement = 0.4
+  const yMax = 1
+  const xDecrement = 0.4
+
+  // So it places at z = 0.5, and then at x = -1.5, with incrementing y positions. If it overflows, we increment x.
+  for (let i = 0; i < numDrones; i++) {
+    positions.push({ x, y, z: 0.5 })
+
+    y += yIncrement
+    if (y > yMax) {
+      y = -1.5 // Reset y
+      x -= xDecrement // Move x closer
+    }
+  }
+
+  return positions
 }
 
 const loadNewGroup = () => {
@@ -171,7 +231,7 @@ const loadNewGroup = () => {
   isCorrect.value = false
   message.value = ''
 
-  // Convert the selected shape's path to {x, y} format
+  // Convert the selected shape's path to {x, y,z} format
   const convertedPath = currentShapes[correctAnswerIndex.value].path.map(([x, y, z]) => ({
     x,
     y,
