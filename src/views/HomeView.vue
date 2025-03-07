@@ -1,6 +1,6 @@
 <template>
   <div id="home-layout">
-    <h1 class="title" id="swarming_title">Swarming</h1>
+    <h1 class="title" id="swarming_title">Swarm</h1>
     <h1 class="title" id="lab_title">Lab</h1>
     <img
       ref="drone_1"
@@ -50,10 +50,10 @@
 
 #swarming_title {
   color: #d8f103;
-  font-size: 8.75rem;
+  font-size: 10.75rem;
   -webkit-text-stroke: 3px #6f1d77;
   font-family: mainFont;
-  height: 20dvh;
+  height: 25dvh;
 }
 
 .drone-svg {
@@ -76,13 +76,13 @@
 
 .styled-button {
   position: relative; /* Enables positioning for pseudo-elements */
-  background-color: #ff99ff; /* Foreground button color */
-  border: 4px solid #6f1d77; /* Border color */
+  background-color: #6f1d77; /* Foreground button color */
+  border: 2px solid #6f1d77; /* Border color */
   font-size: 2rem;
   padding-bottom: 10%;
   padding-right: 10%;
-  width: 400px;
-  height: 150px;
+  width: 35vw;
+  height: 20vh;
   cursor: pointer;
   transition:
     background-color 0.3s,
@@ -97,9 +97,9 @@
   content: ''; /* Creates the background element */
   position: absolute;
   top: -12px; /* Offset slightly down */
-  left: -12px; /* Offset slightly to the right */
-  width: 100%; /* Match the size of the button */
-  height: 100%;
+  left: -15px; /* Offset slightly to the right */
+  width: 102%; /* Match the size of the button */
+  height: 102%;
   background-color: #f7ecd8; /* Background shape color */
   border: 4px solid #6f1d77;
   border-radius: 30px 0px 30px 0px; /* Match the shape of the button */

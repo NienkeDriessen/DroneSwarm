@@ -240,7 +240,7 @@ const checkAnswer = (index: number) => {
     : 'The correct answer was: ' + currentShapes[correctAnswerIndex.value].name + '. Try again!'
 
   // Here we might have to wait until drones are in new position?
-  setTimeout(loadNewGroup, 4000)
+  setTimeout(loadNewGroup, 2000)
 }
 
 onMounted(() => loadNewGroup())
