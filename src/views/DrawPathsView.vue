@@ -73,7 +73,7 @@ import DroneStatus from '../components/DroneStatus.vue';
 import DroneRadar3 from '../components/DroneRadar3.vue';
 import Drone from '../models/Drone';
 
-const DRONES_API_URL = 'http://145.94.63.16:3000/api/drones';
+const DRONES_API_URL = 'http://145.94.163.34:3000/api/drones';
 const POLLING_INTERVAL = 50;
 
 const drones = ref<Drone[]>([]);
@@ -94,7 +94,7 @@ const fetchDronesData = async () => {
   try {
     const response = await axios.get(DRONES_API_URL);
     const dronesData: Record<string, DroneData> = response.data; // Enforce type safety
-    console.log(dronesData); // Debugging output
+    // console.log(dronesData); // Debugging output
 
     // Map drones_data structure to Drone instances
     drones.value = Object.entries(dronesData).map(([id, data]) =>
@@ -108,7 +108,7 @@ const fetchDronesData = async () => {
       )
     );
 
-    console.log('Drones data updated:', drones.value);
+    // console.log('Drones data updated:', drones.value);
   } catch (error) {
     console.error('Error fetching drones data:', error);
   }
@@ -343,10 +343,10 @@ const completePath = () => {
 // ----- New function to map and send coordinates -----
 
 // These constants define the real-life space that your UI grid maps to.
-const REAL_ORIGIN = { x: -50, y: -50 }; // Adjust origin as needed.
-const REAL_WIDTH = 100; // Total width in real-life units.
-const REAL_HEIGHT = 100; // Total height in real-life units.
-const FIXED_Z = 0; // Fixed third coordinate for 2D drawing.
+const REAL_ORIGIN = { x: -1.8, y: 0.0 }; // Adjust origin as needed.
+const REAL_WIDTH = 3.5; // Total width in real-life units.
+const REAL_HEIGHT = 2.5; // Total height in real-life units.
+const FIXED_Z = 1.0; // Fixed third coordinate for 2D drawing.
 
 // Map a UI grid coordinate (with x,y) to real-life coordinates.
 function mapGridToReal(coord: Coordinate) {
@@ -357,52 +357,52 @@ function mapGridToReal(coord: Coordinate) {
   };
 }
 
-// Send the mapped path coordinates to the drones via POST.
+// Replace the existing sendPathCoordinates function with this version:
 const sendPathCoordinates = async () => {
-  // For this example, assign each coordinate to an available drone in order.
-  const availableDrones = drones.value.filter(drone => drone.available);
-    const updates: {
-      droneId: number;
-      pos_x: number;
-      pos_y: number;
-      pos_z: number;
-      vel_x: number;
-      vel_y: number;
-      vel_z: number;
-    }[] = [];
+  const availableDrones = drones.value.filter((drone) => drone.available);
+  const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp));
+  const SENDING_INTERVAL = 200; // adjust sending rate (ms) as needed
+  let index = 0;
 
-  const numUpdates = Math.min(availableDrones.length, pathCoordinates.value.length);
-    for (let i = 0; i < numUpdates; i++) {
-      const realCoord = mapGridToReal(pathCoordinates.value[i]);
-      updates.push({
-        droneId: availableDrones[i].id, // Numeric drone id.
-        pos_x: realCoord.x,
-        pos_y: realCoord.y,
-        pos_z: realCoord.z,
-        // Arbitrary velocity values.
-        vel_x: 0.0,
-        vel_y: 0.0,
-        vel_z: 0.0,
-      });
+  const intervalId = setInterval(() => {
+    if (index >= mappedWaypoints.length) {
+      clearInterval(intervalId);
+      return;
     }
 
-  axios
-    .post(DRONES_API_URL, updates, { timeout: 2000 })
-    .then((response) => {
-      console.log(response);
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log("SERVER ERROR");
-        console.log(error.response);
-      } else if (error.request) {
-        console.log("NETWORK ERROR: " + error.message);
-        console.log(error.request);
-        console.log(error.toJSON());
-      } else {
-        console.log('ERROR', error.message);
-      }
-    });
+    const waypoint = mappedWaypoints[index];
+    // Each packet is an array of update objects (one per available drone)
+    // where each update uses the original receiving keys "pos_x", "pos_y", "pos_z".
+    const updates = availableDrones.map((drone) => ({
+      droneId: drone.id,
+      pos_x: waypoint.x,
+      pos_y: waypoint.y,
+      pos_z: waypoint.z,
+      vel_x: 0.0,
+      vel_y: 0.0,
+      vel_z: 0.0,
+    }));
+
+    axios
+      .post(DRONES_API_URL, updates, { timeout: 2000 })
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log("SERVER ERROR");
+          console.log(error.response);
+        } else if (error.request) {
+          console.log("NETWORK ERROR: " + error.message);
+          console.log(error.request);
+          console.log(error.toJSON());
+        } else {
+          console.log("ERROR", error.message);
+        }
+      });
+
+    index++;
+  }, SENDING_INTERVAL);
 };
 
 // -----------------------------------------------------

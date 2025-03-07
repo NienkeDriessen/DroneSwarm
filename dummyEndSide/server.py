@@ -12,43 +12,43 @@ CORS(app)  # Enable CORS for all routes
 drones_data = {
     1: {
         "bat_level": 100,
-        "pos_x": 0.0, "pos_y": -1.2, "pos_z": 0.03,
+        "pos_x": 0.0, "pos_y": -0.2, "pos_z": 0.03,
         "vel_x": 0.0, "vel_y": 0.0, "vel_z": 0.0
     },
     2: {
         "bat_level": 95,
-        "pos_x": -0.2, "pos_y": -1.1, "pos_z": 0.01,
+        "pos_x": -0.2, "pos_y": -0.1, "pos_z": 0.01,
         "vel_x": 0.1, "vel_y": 0.0, "vel_z": 0.0
     },
     3: {
         "bat_level": 90,
-        "pos_x": -0.1, "pos_y": -1.0, "pos_z": 0.02,
+        "pos_x": -0.1, "pos_y": -0, "pos_z": 0.02,
         "vel_x": 0.0, "vel_y": 0.0, "vel_z": 0.0
     },
     4: {
         "bat_level": 87,
-        "pos_x": 0.3, "pos_y": -1.2, "pos_z": 0.05,
+        "pos_x": 0.3, "pos_y": -0.2, "pos_z": 0.05,
         "vel_x": 0.0, "vel_y": 0.1, "vel_z": 0.0
     },
     5: {
         "bat_level": 75,
-        "pos_x": 0.5, "pos_y": -1.5, "pos_z": 0.01,
+        "pos_x": 0.5, "pos_y": -0.5, "pos_z": 0.01,
         "vel_x": 0.2, "vel_y": 0.0, "vel_z": 0.0
     },
     6: {
         "bat_level": 50,
-        "pos_x": 0.1, "pos_y": -1.7, "pos_z": 0.0,
+        "pos_x": 0.1, "pos_y": -0.7, "pos_z": 0.0,
         "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
     },
 
     7: {
         "bat_level": 75,
-        "pos_x": 0.04, "pos_y": -1.6, "pos_z": 0.0,
+        "pos_x": 0.04, "pos_y": -0.6, "pos_z": 0.0,
         "vel_x": 0.2, "vel_y": 0.0, "vel_z": 0.0
     },
     8: {
         "bat_level": 50,
-        "pos_x": -0.05, "pos_y": -1.6, "pos_z": 0.0,
+        "pos_x": -0.05, "pos_y": -0.6, "pos_z": 0.0,
         "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
     },
 
@@ -83,10 +83,17 @@ def get_drones():
 @app.route('/api/drones', methods=['POST'])
 def update_drones():
     data = request.get_json()
+    print("data:", data)
     with lock:
-        for drone_id, drone_data in data.items():
+        # Iterate through the list of updates
+        for update in data:
+            drone_id = update.get('droneId')
+            # Ensure the drone_id exists in our dataset.
             if drone_id in drones_data:
-                drones_data[drone_id].update(drone_data)
+                # Update only the allowed fields if present.
+                for key in ['pos_x', 'pos_y', 'pos_z', 'vel_x', 'vel_y', 'vel_z']:
+                    if key in update:
+                        drones_data[drone_id][key] = update[key]
     return jsonify({"message": "Data updated successfully!"}), 200
 
 def simulate_drone_removal():
@@ -101,7 +108,7 @@ def simulate_drone_removal():
 
 def simulate_drone_status_changes():
     global global_time
-    spiral_vy = 0.4   # Constant upward velocity in y-direction.
+    spiral_vy = 0.01   # Constant upward velocity in y-direction.
     delta = 0.01        # Time step in seconds.
     while True:
         time.sleep(delta)
@@ -130,7 +137,7 @@ def simulate_drone_status_changes():
 
 # Start the background threads
 # threading.Thread(target=simulate_drone_unavailability, daemon=True).start()
-threading.Thread(target=simulate_drone_status_changes, daemon=True).start()
+# threading.Thread(target=simulate_drone_status_changes, daemon=True).start()
 # threading.Thread(target=simulate_drone_removal, daemon=True).start()  # Optional: Simulate drone removal
 
 
