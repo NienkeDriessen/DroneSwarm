@@ -112,28 +112,27 @@ interface DroneData {
 }
 
 // Fetch drones data
-const fetchDronesData = async () => {
-  try {
-    const response = await axios.get(DRONES_API_URL);
-    const dronesData: Record<string, DroneData> = response.data; // Enforce type safety
-    // console.log(dronesData); // Debugging output
+const fetchDronesData = () => {
+  axios
+    .get(DRONES_API_URL)
+    .then((response) => {
+      const dronesData: Record<string, DroneData> = response.data; // Enforce type safety
 
-    // Map drones_data structure to Drone instances
-    drones.value = Object.entries(dronesData).map(([id, data]) =>
-      new Drone(
-        parseInt(id), // Drone ID
-        true, // Assume drones are available unless there's additional info
-        [], // Empty assignedPoints (or modify if necessary)
-        data.bat_level, // Battery Level
-        { x: data.pos_x, y: data.pos_y, z: data.pos_z }, // Position
-        { x: data.vel_x, y: data.vel_y, z: data.vel_z } // Velocity
-      )
-    );
-
-    // console.log('Drones data updated:', drones.value);
-  } catch (error) {
-    console.error('Error fetching drones data:', error);
-  }
+      // Map drones_data structure to Drone instances
+      drones.value = Object.entries(dronesData).map(([id, data]) =>
+        new Drone(
+          parseInt(id), // Drone ID
+          true, // Assume drones are available unless there's additional info
+          [], // Empty assignedPoints (or modify if necessary)
+          data.bat_level, // Battery Level
+          { x: data.pos_x, y: data.pos_y, z: data.pos_z }, // Position
+          { x: data.vel_x, y: data.vel_y, z: data.vel_z } // Velocity
+        )
+      );
+    })
+    .catch((error) => {
+      console.error('Error fetching drones data:', error);
+    });
 };
 
 
