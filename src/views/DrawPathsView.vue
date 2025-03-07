@@ -1,27 +1,15 @@
 <template>
   <div class="path-drawing">
-    <div class="control-row">
-      <button @click="goBack" class="back-button">Back</button>
-      <div class="title-col">
-        <h1 class="title">Create Your Path</h1>
-        <p class="sub-title">Click on the grid squares to draw the path</p>
-      </div>
-      <div class="mode-toggle">
-        <button
-          id="path-mode-button"
-          :class="['mode-button', currentMode === Mode.PATH ? 'active' : '']"
-          @click="setMode(Mode.PATH)"
-        >
-          Draw a path!
-        </button>
-        <button
-          id="points-mode-button"
-          :class="['mode-button', currentMode === Mode.POINTS ? 'active' : '']"
-          @click="setMode(Mode.POINTS)"
-        >
-          Shape the drones!
-        </button>
-      </div>
+    <button @click="goBack" class="back-button">Back</button>
+    <h1 class="title">Create Your Path</h1>
+    <p class="sub-title">Click on the grid squares to draw the path</p>
+
+    <div class="mode-toggle">
+      <label for="mode">Mode:</label>
+      <select id="mode" v-model="currentMode">
+        <option value="path">Path Drawing</option>
+        <option value="points">Point Assignment</option>
+      </select>
     </div>
 
     <!-- Grid container with overlay for lines -->
@@ -45,8 +33,8 @@
           :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
           :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
           :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-          :stroke="segment.intersecting ? '#DB1F22' : '#ff99ff'"
-          stroke-width="8"
+          :stroke="segment.intersecting ? 'red' : '#435799'"
+          stroke-width="10"
         />
       </svg>
       <!-- Grid cells -->
@@ -54,18 +42,17 @@
         v-for="(cell, index) in grid"
         :key="index"
         :class="['grid-cell', cell.active ? 'active' : '']"
-        :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
+        :data-drone-id="currentMode === 'points' ? getDroneId(index) : ''"
         @click="toggleCell(index)"
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
+
     <!-- Control buttons -->
-    <div class="control-row">
-      <div class="button-container">
-        <button id="undo-button" @click="undo" class="control-button">Undo</button>
-        <button id="reset-button" @click="resetPath" class="control-button">Reset</button>
-        <button id="complete-button" @click="completePath" class="control-button">Done</button>
-      </div>
+    <div class="button-container">
+      <button @click="undo" class="control-button">Undo</button>
+      <button @click="resetPath" class="control-button">Reset</button>
+      <button @click="completePath" class="control-button">Done</button>
     </div>
     <DroneStatus :drones="drones" />
     <DroneRadar3 :drones="drones" />
@@ -167,12 +154,9 @@ const isDragging = ref(false);
 
 watch(currentMode, (newMode, oldMode) => {
   if (newMode !== oldMode) {
-    resetPath()
+    resetPath();
   }
-})
-const setMode = (mode: Mode) => {
-  currentMode.value = mode
-}
+});
 
 const lineSegments = computed(() => {
   const segments = pathCoordinates.value.slice(1).map((end, index) => ({
@@ -202,12 +186,14 @@ const getDroneId = (index: number) => {
 };
 
 const startDrag = () => {
-  if (currentMode.value === Mode.PATH) isDragging.value = true
-}
+  if (currentMode.value === 'path') {
+    isDragging.value = true;
+  }
+};
 
 const endDrag = () => {
-  isDragging.value = false
-}
+  isDragging.value = false;
+};
 
 const handleDrag = (event: MouseEvent) => {
   if (!isDragging.value || currentMode.value !== 'path') return;
@@ -217,14 +203,16 @@ const handleDrag = (event: MouseEvent) => {
     ?.getBoundingClientRect();
   if (!rect) return;
 
-  const x = Math.floor((event.clientX - rect.left) / cellSize)
-  const y = Math.floor((event.clientY - rect.top) / cellSize)
-  const index = y * cols + x
+  const x = Math.floor((event.clientX - rect.left) / cellSize);
+  const y = Math.floor((event.clientY - rect.top) / cellSize);
 
-  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
-    toggleCell(index)
+  if (x >= 0 && x < cols && y >= 0 && y < rows) {
+    const index = y * cols + x;
+    if (!grid.value[index].active) {
+      toggleCell(index);
+    }
   }
-}
+};
 
 const toggleCell = (index: number) => {
   if (currentMode.value === 'path') {
@@ -298,18 +286,18 @@ const resetPath = () => {
 };
 
 const completePath = () => {
-  if (currentMode.value === Mode.PATH) {
-    const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
+  if (currentMode.value === 'path') {
+    const hasIntersections = lineSegments.value.some((segment) => segment.intersecting);
 
     if (hasIntersections) {
-      showNotification('Path contains intersecting lines. Please fix them before proceeding.')
-      return
+      alert('Path contains intersecting lines. Please fix them before proceeding.');
+      return;
     }
 
     waypoints.value = [];
     for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
-      const start = pathCoordinates.value[i]
-      const end = pathCoordinates.value[i + 1]
+      const start = pathCoordinates.value[i];
+      const end = pathCoordinates.value[i + 1];
 
       const distance = Math.sqrt(
         Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
@@ -321,7 +309,7 @@ const completePath = () => {
     }
 
     if (pathCoordinates.value.length > 0) {
-      waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1])
+      waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1]);
     }
 
     console.log('Path completed with coordinates:', pathCoordinates.value);
@@ -333,17 +321,17 @@ const completePath = () => {
     alert('Path and waypoints are ready!');
   } else if (currentMode.value === 'points') {
     if (dronePoints.value.length > availableDronesCount.value) {
-      showNotification('You have assigned more points than the number of available drones!')
-      return
+      alert('You have assigned more points than the number of available drones!');
+      return;
     }
 
     drones.value.forEach((drone) => drone.assignPoints([]));
     dronePoints.value.forEach((dronePoint) => {
       const drone = drones.value.find((d) => d.id === dronePoint.droneId);
       if (drone && drone.available) {
-        drone.assignPoints([dronePoint.point])
+        drone.assignPoints([dronePoint.point]);
       }
-    })
+    });
 
     console.log('Drone assignments for points:', dronePoints.value);
     alert('Drone assignments for points have been made successfully!');
@@ -430,20 +418,6 @@ const goBack = () => {
   font-family: mainFont;
   src: url('@/assets/Alkaline_Caps_Heavy.otf');
 }
-
-.control-row {
-  display: flex;
-  align-items: center;
-  gap: 2vw;
-  margin-top: 1rem;
-}
-
-.title-col {
-  display: flex;
-  align-items: center;
-  width: 60vw;
-  flex-direction: column;
-}
 .title {
   color: #6f1d77;
   font-size: 4.75rem;
@@ -484,14 +458,13 @@ const goBack = () => {
   background-color: #43b7ff;
 }
 
-/* .grid-cell::after {
+.grid-cell::after {
   content: attr(data-drone-id);
   display: block;
   text-align: center;
   font-size: 1.5rem;
   color: black;
-  background-color: #6f1d77;
-} */
+}
 
 .line-overlay {
   position: absolute;
@@ -503,16 +476,17 @@ const goBack = () => {
 .button-container {
   display: flex;
   gap: 1rem;
-  align-items: center;
+  margin-top: 1rem;
 }
 
 .control-button {
   padding: 0.5rem 1rem;
   font-size: 1rem;
   cursor: pointer;
-  color: #6f1d77;
-  border: 2px solid #6f1d77;
-  border-radius: 10px 0px 10px 0px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
   transition: background-color 0.3s;
 }
 
@@ -527,56 +501,5 @@ const goBack = () => {
   border: none;
   border-radius: 4px;
   align-self: flex-start;
-}
-
-#undo-button {
-  background-color: #ff99ff;
-}
-
-#complete-button {
-  background-color: #d8f103;
-}
-
-#reset-button {
-  background-color: #ffe5ff;
-}
-
-.mode-button {
-  padding: 10px 20px;
-  margin: 5px;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  border-radius: 5px;
-  transition:
-    background-color 0.3s,
-    color 0.3s;
-  margin: 0px;
-  width: 15vw;
-}
-
-.mode-button.active {
-  background-color: #6f1d77; /* Active button color */
-  color: #f7ecd8;
-  margin: 0px;
-}
-
-.mode-button:not(.active) {
-  background-color: #f7ecd8; /* Inactive button color */
-  color: #6f1d77;
-  border: 2px solid #6f1d77;
-  cursor: not-allowed;
-  margin: 0px;
-}
-
-.mode-toggle {
-  width: 15vw;
-}
-
-#path-mode-button {
-  border-radius: 5px 5px 0 0;
-}
-#points-mode-button {
-  border-radius: 0 0 5px 5px;
 }
 </style>
