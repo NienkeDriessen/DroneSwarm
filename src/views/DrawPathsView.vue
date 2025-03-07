@@ -337,6 +337,7 @@ const completePath = () => {
 
     console.log('Path completed with coordinates:', pathCoordinates.value)
     console.log('Path waypoints including intermediate points:', waypoints.value)
+    sendPathCoordinates();
     showNotification('Path and waypoints are ready!')
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
@@ -362,6 +363,71 @@ const completePath = () => {
     showNotification('Invalid mode selected!')
   }
 }
+
+//  ----- New function to map and send coordinates -----
+
+// These constants define the real-life space that your UI grid maps to.
+const REAL_ORIGIN = { x: -1.8, y: 0.0 }; // Adjust origin as needed.
+const REAL_WIDTH = 3.5; // Total width in real-life units.
+const REAL_HEIGHT = 2.5; // Total height in real-life units.
+const FIXED_Z = 1.0; // Fixed third coordinate for 2D drawing.
+
+// Map a UI grid coordinate (with x,y) to real-life coordinates.
+function mapGridToReal(coord: Coordinate) {
+  return {
+    x: REAL_ORIGIN.x + (coord.x + 0.5) * (REAL_WIDTH / cols),
+    y: REAL_ORIGIN.y + (coord.y + 0.5) * (REAL_HEIGHT / rows),
+    z: FIXED_Z,
+  };
+}
+
+// Replace the existing sendPathCoordinates function with this version:
+const sendPathCoordinates = async () => {
+  const availableDrones = drones.value.filter((drone) => drone.available);
+  const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp));
+  const SENDING_INTERVAL = 200; // adjust sending rate (ms) as needed
+  let index = 0;
+
+  const intervalId = setInterval(() => {
+    if (index >= mappedWaypoints.length) {
+      clearInterval(intervalId);
+      return;
+    }
+
+    const waypoint = mappedWaypoints[index];
+    // Each packet is an array of update objects (one per available drone)
+    // where each update uses the original receiving keys "pos_x", "pos_y", "pos_z".
+    const updates = availableDrones.map((drone) => ({
+      droneId: drone.id,
+      pos_x: waypoint.x,
+      pos_y: waypoint.y,
+      pos_z: waypoint.z,
+      vel_x: 0.0,
+      vel_y: 0.0,
+      vel_z: 0.0,
+    }));
+
+    axios
+      .post(DRONES_API_URL, updates, { timeout: 2000 })
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log("SERVER ERROR");
+          console.log(error.response);
+        } else if (error.request) {
+          console.log("NETWORK ERROR: " + error.message);
+          console.log(error.request);
+          console.log(error.toJSON());
+        } else {
+          console.log("ERROR", error.message);
+        }
+      });
+
+    index++;
+  }, SENDING_INTERVAL);
+};
 
 // Go back function to navigate to the previous page
 const router = useRouter()
