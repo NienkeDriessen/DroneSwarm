@@ -13,6 +13,7 @@
       ]"
     >
       {{ shape.name }}
+      <img :src="shape.image" alt="Button icon" class="button_icon" id="icon" />
     </button>
   </div>
 </template>
@@ -33,6 +34,10 @@ defineProps({
 
 // Define the event emitted
 defineEmits(['select'])
+
+// const getIconPath = (path: string) => {
+//   return new URL(`${path}`, import.meta.url).href
+// }
 </script>
 
 <style scoped>
