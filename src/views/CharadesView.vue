@@ -88,7 +88,7 @@ const createDroneArray = (
 const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
   const maxStepSize = 6
   const waypoints: { x: number; y: number; z: number }[] = []
-  const numDrones = 3 // We have to get this in stead of being hardcoded
+  const numDrones = 1 // We have to get this in stead of being hardcoded
 
   // Generate waypoints for each drone
   const waypointsPerDrone: { x: number; y: number; z: number }[][] = Array.from(

@@ -7,25 +7,28 @@
       src="@/assets/drone_svg/drone_flying_shadow_2.svg"
       alt="Drone SVG"
       class="drone-svg"
+      id="drone_1"
     />
     <img
       ref="drone_2"
-      src="@/assets/drone_svg/drone_flying_shadow_3.svg"
+      src="@/assets/drone_svg/drone_flying_shadow_2.svg"
       alt="Drone SVG"
       class="drone-svg"
+      id="drone_2"
     />
     <img
       ref="drone_3"
-      src="@/assets/drone_svg/drone_flying_shadow_1.svg"
+      src="@/assets/drone_svg/drone_flying_shadow_2.svg"
       alt="Drone SVG"
       class="drone-svg"
+      id="drone_3"
     />
     <div class="button-container">
       <router-link to="/charades">
-        <button class="styled-button">Charades</button>
+        <button class="styled-button">Raad de vorm!</button>
       </router-link>
       <router-link to="/draw-your-own-path">
-        <button class="styled-button">Draw your own path!</button>
+        <button class="styled-button">Teken je eigen pad!</button>
       </router-link>
     </div>
   </div>
@@ -49,16 +52,34 @@
 }
 
 #swarming_title {
-  color: #d8f103;
+  color: #6f1d77;
   font-size: 10.75rem;
   -webkit-text-stroke: 3px #6f1d77;
   font-family: mainFont;
   height: 25dvh;
+  z-index: 10;
+}
+
+#drone_1 {
+  width: 20vh;
+  left: 10vw;
+  top: 10vh;
+}
+
+#drone_2 {
+  width: 15vh;
+  left: 70vw;
+  top: 10vh;
+}
+
+#drone_3 {
+  width: 20vh;
+  left: 50vw;
+  top: 5vh;
 }
 
 .drone-svg {
-  width: 150px;
-  z-index: 10;
+  z-index: 0;
   position: absolute; /* Ensures the drone can be moved with left and top */
 }
 .title {
@@ -125,9 +146,9 @@ export default {
 
     const drones = [drone_1, drone_2, drone_3] // Store references to all drones in an array
     const velocities = [
-      { x: 10, y: 2 },
-      { x: 5, y: 10 },
-      { x: 7, y: 7 },
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
     ] // Speed and direction of the drones
 
     // Animation logic for each drone
@@ -159,17 +180,17 @@ export default {
       }
     }
 
-    // Start the animation after the component is mounted
-    onMounted(() => {
-      // Move each drone at intervals
-      setInterval(() => {
-        drones.forEach((drone, index) => {
-          if (drone.value) {
-            moveDrone(index)
-          }
-        })
-      }, 30)
-    })
+    // // Start the animation after the component is mounted
+    // onMounted(() => {
+    //   // Move each drone at intervals
+    //   setInterval(() => {
+    //     drones.forEach((drone, index) => {
+    //       if (drone.value) {
+    //         moveDrone(index)
+    //       }
+    //     })
+    //   }, 30)
+    // })
 
     return {
       drone_1,
