@@ -1,8 +1,8 @@
-export type ShapeName = 'Line' | 'Triangle' | 'Circle' | 'Square' | 'Heart' | 'Apple' | 'Moon'
+export type ShapeName = 'Line' | 'Triangle' | 'Circle' | 'Square' | 'Heart' | 'Druppel' | 'Moon'
 
 export const groups: ShapeName[][] = [
   ['Triangle', 'Line', 'Circle', 'Square'], // Group 1
-  ['Triangle', 'Apple', 'Heart', 'Moon'], // Group 2
+  ['Triangle', 'Druppel', 'Heart', 'Moon'], // Group 2
 ]
 
 const startPath = new URL('@/assets/charades_icons/', import.meta.url).href
@@ -10,7 +10,7 @@ const startPath = new URL('@/assets/charades_icons/', import.meta.url).href
 //\charades_icons\Heart.svg
 export const shapesData: Record<ShapeName, { image: string; path: number[][] }> = {
   Line: {
-    image: startPath + '/Heart.svg',
+    image: startPath + '/Line.svg',
     path: [
       [0, 0, 1.25],
       [0, -1, 1.5],
@@ -20,7 +20,7 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
     ],
   },
   Triangle: {
-    image: startPath + '/Heart.svg',
+    image: startPath + '/Triangle.svg',
     path: [
       [0, 0, 1.25],
       [0, -0.5, 1],
@@ -31,7 +31,7 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
     ],
   },
   Circle: {
-    image: startPath + '/Heart.svg',
+    image: startPath + '/Circle.svg',
     path: [
       [0, 0, 1.25],
       [0, 0, 2],
@@ -47,7 +47,7 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
     ],
   },
   Square: {
-    image: startPath + '/Heart.svg',
+    image: startPath + '/Square.svg',
     path: [
       [0, 0, 1.25],
       [0, -0.85, 1.875],
@@ -73,8 +73,8 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 0, 1.25],
     ],
   },
-  Apple: {
-    image: startPath + '/Heart.svg',
+  Druppel: {
+    image: startPath + '/Druppel.svg',
     path: [
       [0, 0, 0.625],
       [0, -0.45, 0.31],

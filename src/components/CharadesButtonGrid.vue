@@ -41,6 +41,10 @@ defineEmits(['select'])
 </script>
 
 <style scoped>
+.button_icon {
+  width: 50%;
+}
+
 .button-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
