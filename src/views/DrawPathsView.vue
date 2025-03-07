@@ -23,6 +23,7 @@
         </button>
       </div>
     </div>
+
     <!-- Grid container with overlay for lines -->
     <div
       class="grid-container"
@@ -32,9 +33,7 @@
       @mousemove="handleDrag"
       :style="{
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
-        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
-        width: `${gridWidth}px`,
-        height: `${gridHeight}px`,
+        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`
       }"
     >
       <!-- Lines -->
@@ -60,9 +59,6 @@
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
-    <div v-if="notificationMessage" class="notification">
-      {{ notificationMessage }}
-    </div>
     <!-- Control buttons -->
     <div class="control-row">
       <div class="button-container">
@@ -71,90 +67,104 @@
         <button id="complete-button" @click="completePath" class="control-button">Done</button>
       </div>
     </div>
-
-    <!-- Drone Status Overview -->
-    <DroneStatus v-if="currentMode === Mode.POINTS" :drones="drones" />
+    <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
 import {
   doLinesIntersect,
   generateIntermediatePoints,
   type Coordinate,
-} from '../assets/GeometryTools'
+} from '../assets/GeometryTools';
+import DroneStatus from '../components/DroneStatus.vue';
+// import DroneRadar from '../components/DroneRadar.vue';
+import DroneRadar3 from '../components/DroneRadar3.vue';
+import Drone from '../models/Drone';
 
-import DroneStatus from '../components/DroneStatus.vue'
-import Drone from '../models/Drone'
+const DRONES_API_URL = 'http://145.94.163.34:3000/api/drones';
+const POLLING_INTERVAL = 50;
 
-enum Mode {
-  PATH = 'path',
-  POINTS = 'points',
+const drones = ref<Drone[]>([]);
+
+// Define the expected structure of the incoming drone data
+interface DroneData {
+  bat_level: number;
+  pos_x: number;
+  pos_y: number;
+  pos_z: number;
+  vel_x: number;
+  vel_y: number;
+  vel_z: number;
 }
 
-const drones = ref<Drone[]>([
-  new Drone(1, true),
-  new Drone(2, true),
-  new Drone(3, true),
-  new Drone(4, true),
-  new Drone(5, false),
-  new Drone(6, false),
-  new Drone(7, false),
-  new Drone(8, false),
-])
+// Fetch drones data
+const fetchDronesData = async () => {
+  try {
+    const response = await axios.get(DRONES_API_URL);
+    const dronesData: Record<string, DroneData> = response.data; // Enforce type safety
+    // console.log(dronesData); // Debugging output
 
-// Helper to count available drones
-const availableDronesCount = computed(() => drones.value.filter((drone) => drone.available).length)
+    // Map drones_data structure to Drone instances
+    drones.value = Object.entries(dronesData).map(([id, data]) =>
+      new Drone(
+        parseInt(id), // Drone ID
+        true, // Assume drones are available unless there's additional info
+        [], // Empty assignedPoints (or modify if necessary)
+        data.bat_level, // Battery Level
+        { x: data.pos_x, y: data.pos_y, z: data.pos_z }, // Position
+        { x: data.vel_x, y: data.vel_y, z: data.vel_z } // Velocity
+      )
+    );
 
-// Define the grid size
-const rows = 8
-const cols = 15
-const maxGridWidth = 700
-const maxGridHeight = 500
-const gap = 1 // Gap size between cells
+    // console.log('Drones data updated:', drones.value);
+  } catch (error) {
+    console.error('Error fetching drones data:', error);
+  }
+};
 
-const maxStepSize = 0.5 // the max length one step can have
 
-// Calculate cell size based on the max dimensions and number of cells including gaps
+let pollingIntervalId: number | null = null;
+onMounted(() => {
+  fetchDronesData();
+  pollingIntervalId = window.setInterval(fetchDronesData, POLLING_INTERVAL);
+});
+
+onUnmounted(() => {
+  if (pollingIntervalId !== null) {
+    clearInterval(pollingIntervalId);
+  }
+});
+
+const availableDronesCount = computed(() =>
+  drones.value.filter((drone) => drone.available).length
+);
+
+const rows = 8;
+const cols = 15;
+const maxGridWidth = 700;
+const maxGridHeight = 500;
+const gap = 1;
+const maxStepSize = 0.5;
+
 const cellSize = Math.min(
   (maxGridWidth - gap * (cols - 1)) / cols,
-  (maxGridHeight - gap * (rows - 1)) / rows,
-)
-const gridWidth = cellSize * cols + gap * (cols - 1)
-const gridHeight = cellSize * rows + gap * (rows - 1)
+  (maxGridHeight - gap * (rows - 1)) / rows
+);
+const gridWidth = cellSize * cols + gap * (cols - 1);
+const gridHeight = cellSize * rows + gap * (rows - 1);
+const grid = ref(Array(rows * cols).fill({ active: false }));
 
-// Initialize the grid array with inactive cells
-const grid = ref(Array(rows * cols).fill({ active: false }))
+const pathCoordinates = ref<Coordinate[]>([]);
+const waypoints = ref<Coordinate[]>([]);
+const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([]);
+const currentMode = ref('path');
+const isDragging = ref(false);
 
-// Track the selected path coordinates
-const pathCoordinates = ref<Coordinate[]>([])
-
-// Create array for the waypoint generator itself
-const waypoints = ref<Coordinate[]>([])
-
-const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([])
-
-const currentMode = ref<Mode>(Mode.PATH) // Default is draw
-const isDragging = ref(false) // Default to no dragging
-
-const notificationMessage = ref<string | null>(null) // To store the notification message
-
-/**
- * Displays a notification message for a set duration.
- * @param message The message to display.
- * @param duration Time (in milliseconds) to display the message.
- */
-const showNotification = (message: string, duration = 5000) => {
-  notificationMessage.value = message
-  setTimeout(() => {
-    notificationMessage.value = null
-  }, duration)
-}
-
-// Watch for mode changes and reset the grid
 watch(currentMode, (newMode, oldMode) => {
   if (newMode !== oldMode) {
     resetPath()
@@ -168,27 +178,28 @@ const lineSegments = computed(() => {
   const segments = pathCoordinates.value.slice(1).map((end, index) => ({
     start: pathCoordinates.value[index],
     end: end,
-    intersecting: false, // Default to false
-  }))
+    intersecting: false,
+  }));
 
-  // Check each segment for intersections with every other segment
   segments.forEach((segment, i) => {
     for (let j = 0; j < i; j++) {
       if (doLinesIntersect(segment.start, segment.end, segments[j].start, segments[j].end)) {
-        segment.intersecting = true
-        segments[j].intersecting = true
+        segment.intersecting = true;
+        segments[j].intersecting = true;
       }
     }
-  })
+  });
 
-  return segments
-})
+  return segments;
+});
 
 const getDroneId = (index: number) => {
-  const point = { x: index % cols, y: Math.floor(index / cols) }
-  const drone = dronePoints.value.find((dp) => dp.point.x === point.x && dp.point.y === point.y)
-  return drone ? drone.droneId : ''
-}
+  const point = { x: index % cols, y: Math.floor(index / cols) };
+  const drone = dronePoints.value.find(
+    (dp) => dp.point.x === point.x && dp.point.y === point.y
+  );
+  return drone ? drone.droneId : '';
+};
 
 const startDrag = () => {
   if (currentMode.value === Mode.PATH) isDragging.value = true
@@ -199,9 +210,12 @@ const endDrag = () => {
 }
 
 const handleDrag = (event: MouseEvent) => {
-  if (!isDragging.value || currentMode.value !== Mode.PATH) return
-  const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect()
-  if (!rect) return
+  if (!isDragging.value || currentMode.value !== 'path') return;
+
+  const rect = (event.target as HTMLElement)
+    .closest('.grid-container')
+    ?.getBoundingClientRect();
+  if (!rect) return;
 
   const x = Math.floor((event.clientX - rect.left) / cellSize)
   const y = Math.floor((event.clientY - rect.top) / cellSize)
@@ -213,120 +227,202 @@ const handleDrag = (event: MouseEvent) => {
 }
 
 const toggleCell = (index: number) => {
-  const point = { x: index % cols, y: Math.floor(index / cols) }
-
-  if (currentMode.value === Mode.PATH) {
-    if (!grid.value[index].active) {
-      grid.value[index] = { active: true }
-      pathCoordinates.value.push(point)
+  if (currentMode.value === 'path') {
+    if (pathCoordinates.value.length === 0 || !grid.value[index].active) {
+      grid.value[index] = { active: true };
+      pathCoordinates.value.push({
+        x: index % cols,
+        y: Math.floor(index / cols),
+      });
     }
-  } else if (currentMode.value === Mode.POINTS) {
-    const droneIndex = dronePoints.value.findIndex(
-      (dp) => dp.point.x === point.x && dp.point.y === point.y,
-    )
-    if (droneIndex !== -1) {
-      grid.value[index] = { active: false }
-      dronePoints.value.splice(droneIndex, 1)
-    } else {
-      const availableDrone = drones.value.find(
-        (drone) => drone.available && !dronePoints.value.some((dp) => dp.droneId === drone.id),
-      )
-      if (availableDrone) {
-        grid.value[index] = { active: true }
-        dronePoints.value.push({ point, droneId: availableDrone.id })
-      } else {
-        alert('No available drones!')
+  } else if (currentMode.value === 'points') {
+    const availableDrones = drones.value.filter((drone) => drone.available);
+    const usedDroneIds = new Set(dronePoints.value.map((dp) => dp.droneId));
+    const availableDroneIds = availableDrones
+      .map((drone) => drone.id)
+      .filter((id) => !usedDroneIds.has(id))
+      .sort((a, b) => a - b);
+
+    const cellIndex = dronePoints.value.findIndex(
+      (dp) => dp.point.x === index % cols && dp.point.y === Math.floor(index / cols)
+    );
+
+    if (cellIndex !== -1) {
+      grid.value[index] = { active: false };
+      dronePoints.value.splice(cellIndex, 1);
+    } else if (!grid.value[index].active) {
+      if (dronePoints.value.length >= availableDrones.length) {
+        alert('You cannot assign more points than the number of available drones!');
+        return;
+      }
+
+      grid.value[index] = { active: true };
+      const point = {
+        x: index % cols,
+        y: Math.floor(index / cols),
+      };
+
+      if (availableDroneIds.length > 0) {
+        const nextDroneId = availableDroneIds[0];
+        dronePoints.value.push({ droneId: nextDroneId, point });
       }
     }
   }
-}
+};
 
-// Undo the last cell in the path
 const undo = () => {
-  if (currentMode.value === Mode.PATH && pathCoordinates.value.length > 0) {
-    const lastPoint = pathCoordinates.value.pop()!
-    const index = lastPoint.y * cols + lastPoint.x
-    grid.value[index] = { active: false }
-  } else if (currentMode.value === Mode.POINTS && dronePoints.value.length > 0) {
-    const lastPoint = dronePoints.value.pop()!
-    const index = lastPoint.point.y * cols + lastPoint.point.x
-    grid.value[index] = { active: false }
+  if (currentMode.value === 'path') {
+    if (pathCoordinates.value.length > 0) {
+      const lastPoint = pathCoordinates.value.pop();
+      if (lastPoint) {
+        const lastIndex = lastPoint.y * cols + lastPoint.x;
+        grid.value[lastIndex] = { active: false };
+      }
+    }
+  } else if (currentMode.value === 'points') {
+    if (dronePoints.value.length > 0) {
+      const lastPoint = dronePoints.value.pop();
+      if (lastPoint) {
+        const lastIndex = lastPoint.point.y * cols + lastPoint.point.x;
+        grid.value[lastIndex] = { active: false };
+      }
+    }
   }
-}
-// Reset the path and grid
+};
+
 const resetPath = () => {
-  pathCoordinates.value = []
-  dronePoints.value = []
-  waypoints.value = []
-  grid.value = Array(rows * cols).fill({ active: false })
-}
+  pathCoordinates.value = [];
+  dronePoints.value = [];
+  waypoints.value = [];
+  grid.value = Array(rows * cols).fill({ active: false });
+};
 
 const completePath = () => {
   if (currentMode.value === Mode.PATH) {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
 
-    // Handle intersection by asking user to undo or start from scratch
     if (hasIntersections) {
       showNotification('Path contains intersecting lines. Please fix them before proceeding.')
       return
     }
 
-    // Generate waypoints if no intersections
-    waypoints.value = []
+    waypoints.value = [];
     for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
       const start = pathCoordinates.value[i]
       const end = pathCoordinates.value[i + 1]
 
-      // Calculate distance between points
-      const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2))
-      // Dynamically determine the number of steps
-      const steps = Math.max(1, Math.ceil(distance / maxStepSize)) // At least 1 step
+      const distance = Math.sqrt(
+        Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
+      );
+      const steps = Math.max(1, Math.ceil(distance / maxStepSize));
 
-      // Add the starting point
-      waypoints.value.push(start)
-
-      // Add intermediate points
-      waypoints.value.push(...generateIntermediatePoints(start, end, steps))
+      waypoints.value.push(start);
+      waypoints.value.push(...generateIntermediatePoints(start, end, steps));
     }
 
-    // Add the last point
     if (pathCoordinates.value.length > 0) {
       waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1])
     }
 
-    console.log('Path completed with coordinates:', pathCoordinates.value)
-    console.log('Path waypoints including intermediate points:', waypoints.value)
-    showNotification('Path and waypoints are ready!')
+    console.log('Path completed with coordinates:', pathCoordinates.value);
+    console.log('Path waypoints including intermediate points:', waypoints.value);
+
+    // Send the mapped coordinates to the drones.
+    sendPathCoordinates();
+
+    alert('Path and waypoints are ready!');
   } else if (currentMode.value === 'points') {
-    // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
       showNotification('You have assigned more points than the number of available drones!')
       return
     }
 
-    // Clear existing assignments
-    drones.value.forEach((drone) => drone.assignPoints([]))
-
-    // Assign points to drones using Drone class method
+    drones.value.forEach((drone) => drone.assignPoints([]));
     dronePoints.value.forEach((dronePoint) => {
-      const drone = drones.value.find((d) => d.id === dronePoint.droneId)
+      const drone = drones.value.find((d) => d.id === dronePoint.droneId);
       if (drone && drone.available) {
         drone.assignPoints([dronePoint.point])
       }
     })
 
-    console.log('Drone assignments for points:', dronePoints.value)
-    showNotification('Drone assignments for points have been made successfully!')
+    console.log('Drone assignments for points:', dronePoints.value);
+    alert('Drone assignments for points have been made successfully!');
   } else {
-    showNotification('Invalid mode selected!')
+    alert('Invalid mode selected!');
   }
+};
+
+// ----- New function to map and send coordinates -----
+
+// These constants define the real-life space that your UI grid maps to.
+const REAL_ORIGIN = { x: -1.8, y: 0.0 }; // Adjust origin as needed.
+const REAL_WIDTH = 3.5; // Total width in real-life units.
+const REAL_HEIGHT = 2.5; // Total height in real-life units.
+const FIXED_Z = 1.0; // Fixed third coordinate for 2D drawing.
+
+// Map a UI grid coordinate (with x,y) to real-life coordinates.
+function mapGridToReal(coord: Coordinate) {
+  return {
+    x: REAL_ORIGIN.x + (coord.x + 0.5) * (REAL_WIDTH / cols),
+    y: REAL_ORIGIN.y + (coord.y + 0.5) * (REAL_HEIGHT / rows),
+    z: FIXED_Z,
+  };
 }
 
-// Go back function to navigate to the previous page
-const router = useRouter()
+// Replace the existing sendPathCoordinates function with this version:
+const sendPathCoordinates = async () => {
+  const availableDrones = drones.value.filter((drone) => drone.available);
+  const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp));
+  const SENDING_INTERVAL = 200; // adjust sending rate (ms) as needed
+  let index = 0;
+
+  const intervalId = setInterval(() => {
+    if (index >= mappedWaypoints.length) {
+      clearInterval(intervalId);
+      return;
+    }
+
+    const waypoint = mappedWaypoints[index];
+    // Each packet is an array of update objects (one per available drone)
+    // where each update uses the original receiving keys "pos_x", "pos_y", "pos_z".
+    const updates = availableDrones.map((drone) => ({
+      droneId: drone.id,
+      pos_x: waypoint.x,
+      pos_y: waypoint.y,
+      pos_z: waypoint.z,
+      vel_x: 0.0,
+      vel_y: 0.0,
+      vel_z: 0.0,
+    }));
+
+    axios
+      .post(DRONES_API_URL, updates, { timeout: 2000 })
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log("SERVER ERROR");
+          console.log(error.response);
+        } else if (error.request) {
+          console.log("NETWORK ERROR: " + error.message);
+          console.log(error.request);
+          console.log(error.toJSON());
+        } else {
+          console.log("ERROR", error.message);
+        }
+      });
+
+    index++;
+  }, SENDING_INTERVAL);
+};
+
+// -----------------------------------------------------
+
+const router = useRouter();
 const goBack = () => {
-  router.back()
-}
+  router.back();
+};
 </script>
 
 <style scoped>
@@ -367,30 +463,25 @@ const goBack = () => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  min-height: 100vh; /* Ensures the background color fills the viewport */
+  min-height: 100vh;
   min-width: 100vw;
 }
 
 .grid-container {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(30, 20px);
-  grid-template-rows: repeat(20, 20px);
   gap: 2px;
   margin: 1rem 0;
 }
 
 .grid-cell {
-  width: 20px;
-  height: 20px;
-  background-color: #f7ecd8;
-  border: 2px solid #6f1d77;
+  background-color: #e0e0e0;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
 .grid-cell.active {
-  background-color: #6f1d77; /* Active cell color */
+  background-color: #43b7ff;
 }
 
 /* .grid-cell::after {
@@ -402,20 +493,13 @@ const goBack = () => {
   background-color: #6f1d77;
 } */
 
-/* Overlay for lines */
 .line-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  pointer-events: none; /* Prevent SVG overlay from blocking clicks */
+  pointer-events: none;
 }
 
-.notification {
-  color: #6f1d77;
-  font-weight: 300;
-  font-size: 1.4rem;
-  font-family: 'Arial Narrow', Arial, sans-serif;
-}
 .button-container {
   display: flex;
   gap: 1rem;
@@ -440,7 +524,7 @@ const goBack = () => {
   cursor: pointer;
   background-color: #6f1d77;
   color: #f7ecd8;
-  border: 0px solid #f7ecd8;
+  border: none;
   border-radius: 4px;
   align-self: flex-start;
 }
