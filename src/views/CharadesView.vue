@@ -1,8 +1,8 @@
 <template>
   <div class="charades-container">
     <button @click="goBack" class="back-button">Back</button>
-    <h1 class="title">Charades Game</h1>
-    <p class="sub-title">Guess the correct shape!</p>
+    <h1 class="title">Raad de vorm!</h1>
+    <p class="sub-title">Stem op de vorm die je de drones ziet vliegen</p>
 
     <!-- Use the ShapeButtonGrid Component -->
     <ShapeButtonGrid
@@ -250,8 +250,10 @@ const checkAnswer = (index: number) => {
   isCorrect.value = index === correctAnswerIndex.value
 
   message.value = isCorrect.value
-    ? 'Correct! Loading next group...'
-    : 'The correct answer was: ' + currentShapes[correctAnswerIndex.value].name + '. Try again!'
+    ? 'Correct! Nieuwe vorm wordt geladen...'
+    : 'Het goede antwoord was: ' +
+      currentShapes[correctAnswerIndex.value].name +
+      '. Nieuwe vorm wordt geladen...'
 
   // Here we might have to wait until drones are in new position?
   setTimeout(loadNewGroup, 2000)
