@@ -37,6 +37,7 @@ const isCorrect = ref(false)
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
+const uiDebug = true
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
@@ -239,7 +240,9 @@ const loadNewGroup = () => {
   }))
 
   // Send shape path of the randomly chosen shape
-  sendShapePath(convertedPath)
+  if (!uiDebug) {
+    sendShapePath(convertedPath)
+  }
 }
 
 const checkAnswer = (index: number) => {

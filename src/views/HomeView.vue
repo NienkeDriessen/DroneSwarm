@@ -61,20 +61,20 @@
 }
 
 #drone_1 {
-  width: 20vh;
-  left: 10vw;
-  top: 10vh;
+  width: 40vh;
+  left: 4vw;
+  top: 8vh;
 }
 
 #drone_2 {
-  width: 15vh;
-  left: 70vw;
-  top: 10vh;
+  width: 22vh;
+  left: 75vw;
+  top: 30vh;
 }
 
 #drone_3 {
-  width: 20vh;
-  left: 50vw;
+  width: 25vh;
+  left: 60vw;
   top: 5vh;
 }
 

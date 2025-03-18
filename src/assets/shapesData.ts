@@ -1,16 +1,16 @@
-export type ShapeName = 'Line' | 'Triangle' | 'Circle' | 'Square' | 'Heart' | 'Druppel' | 'Moon'
+export type ShapeName = 'Lijn' | 'Driehoek' | 'Cirkel' | 'Vierkant' | 'Hart' | 'Druppel' | 'Maan'
 
 export const groups: ShapeName[][] = [
-  ['Triangle', 'Line', 'Circle', 'Square'], // Group 1
-  ['Triangle', 'Druppel', 'Heart', 'Moon'], // Group 2
+  ['Driehoek', 'Lijn', 'Cirkel', 'Vierkant'], // Group 1
+  ['Driehoek', 'Druppel', 'Hart', 'Maan'], // Group 2
 ]
 
 const startPath = new URL('@/assets/charades_icons/', import.meta.url).href
 
-//\charades_icons\Heart.svg
+//\charades_icons\Hart.svg
 export const shapesData: Record<ShapeName, { image: string; path: number[][] }> = {
-  Line: {
-    image: startPath + '/Line.svg',
+  Lijn: {
+    image: startPath + '/Lijn.svg',
     path: [
       [0, 0, 1.25],
       [0, -1, 1.5],
@@ -19,8 +19,8 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 0, 1.25],
     ],
   },
-  Triangle: {
-    image: startPath + '/Triangle.svg',
+  Driehoek: {
+    image: startPath + '/Driehoek.svg',
     path: [
       [0, 0, 1.25],
       [0, -0.5, 1],
@@ -30,8 +30,8 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 0, 1.25],
     ],
   },
-  Circle: {
-    image: startPath + '/Circle.svg',
+  Cirkel: {
+    image: startPath + '/Cirkel.svg',
     path: [
       [0, 0, 1.25],
       [0, 0, 2],
@@ -46,8 +46,8 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 0, 1.25],
     ],
   },
-  Square: {
-    image: startPath + '/Square.svg',
+  Vierkant: {
+    image: startPath + '/Vierkant.svg',
     path: [
       [0, 0, 1.25],
       [0, -0.85, 1.875],
@@ -57,8 +57,8 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 0, 1.25],
     ],
   },
-  Heart: {
-    image: startPath + '/Heart.svg',
+  Hart: {
+    image: startPath + '/Hart.svg',
     path: [
       [0, 0, 1.25],
       [0, 0, 0.31],
@@ -91,8 +91,8 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
       [0, 0, 0.625],
     ],
   },
-  Moon: {
-    image: startPath + '/Moon.svg',
+  Maan: {
+    image: startPath + '/Maan.svg',
     path: [
       [0, 0, 1.25],
       [0, 0, 0.31],
