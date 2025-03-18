@@ -3,7 +3,7 @@
     <button @click="goBack" class="back-button">Back</button>
     <h1 class="title">Raad de vorm!</h1>
     <p class="sub-title">Stem op de vorm die je de drones ziet vliegen</p>
-
+    <div class="countdown-timer" v-if="countdown > 0">{{ countdown }}</div>
     <!-- Use the ShapeButtonGrid Component -->
     <ShapeButtonGrid
       :shapes="currentShapes"
@@ -38,6 +38,9 @@ const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
 const uiDebug = true
+
+// Countdown timer
+const countdown = ref(0)
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
@@ -243,6 +246,13 @@ const loadNewGroup = () => {
   if (!uiDebug) {
     sendShapePath(convertedPath)
   }
+
+  countdown.value = 10 // Start countdown from 10
+
+  const timer = setInterval(() => {
+    countdown.value--
+    if (countdown.value < 0) clearInterval(timer)
+  }, 1000)
 }
 
 const checkAnswer = (index: number) => {
@@ -276,6 +286,17 @@ const goBack = () => router.back()
   font-family: mainFont, 'Arial Narrow', Arial, sans-serif;
   height: 10vh;
 }
+.countdown-timer {
+  position: absolute;
+  top: 5vh;
+  right: 10vw;
+  /* color: #ff99ff; */
+  color: #6f1d77;
+  font-size: 4.75rem;
+  font-family: mainFont, 'Arial Narrow', Arial, sans-serif;
+  height: 10vh;
+}
+
 .sub-title {
   color: #6f1d77;
   font-weight: 500;

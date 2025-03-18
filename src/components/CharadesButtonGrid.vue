@@ -43,6 +43,7 @@ defineEmits(['select'])
 <style scoped>
 .button_icon {
   width: 40%;
+  padding-left: 10%;
 }
 
 .button-grid {
