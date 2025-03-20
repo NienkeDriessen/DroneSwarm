@@ -9,7 +9,7 @@
       :shapes="currentShapes"
       :selectedButton="selectedButton"
       :isCorrect="isCorrect"
-      @select="checkAnswer"
+      @select="vote"
     />
 
     <p class="sub-title" v-if="message">{{ message }}</p>
@@ -41,6 +41,9 @@ const uiDebug = true
 
 // Countdown timer
 const countdown = ref(0)
+const countdown_value = 10 // Start countdown from 10
+// Store votes for each button
+const votes = reactive<number[]>([])
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
@@ -247,25 +250,58 @@ const loadNewGroup = () => {
     sendShapePath(convertedPath)
   }
 
-  countdown.value = 10 // Start countdown from 10
+  // Reset votes
+  votes.length = 0
+  for (let i = 0; i < currentShapes.length; i++) {
+    votes.push(0)
+  }
 
+  // Reset counter
+  countdown.value = countdown_value
   const timer = setInterval(() => {
     countdown.value--
-    if (countdown.value < 0) clearInterval(timer)
+    if (countdown.value < 0) {
+      evaluateResults()
+      clearInterval(timer)
+    }
   }, 1000)
 }
 
-const checkAnswer = (index: number) => {
-  selectedButton.value = index
-  isCorrect.value = index === correctAnswerIndex.value
+// const checkAnswer = (index: number) => {
+//   selectedButton.value = index
+//   isCorrect.value = index === correctAnswerIndex.value
 
-  message.value = isCorrect.value
-    ? 'Correct! Nieuwe vorm wordt geladen...'
-    : 'Het goede antwoord was: ' +
-      currentShapes[correctAnswerIndex.value].name +
-      '. Nieuwe vorm wordt geladen...'
+//   message.value = isCorrect.value
+//     ? 'Correct! Nieuwe vorm wordt geladen...'
+//     : 'Het goede antwoord was: ' +
+//       currentShapes[correctAnswerIndex.value].name +
+//       '. Nieuwe vorm wordt geladen...'
 
-  // Here we might have to wait until drones are in new position?
+//   // Here we might have to wait until drones are in new position?
+//   setTimeout(loadNewGroup, 2000)
+// }
+
+const vote = (index: number) => {
+  votes[index]++
+}
+
+const evaluateResults = () => {
+  const maxVotes = Math.max(...votes)
+  const topChoices = votes
+    .map((count, index) => (count === maxVotes ? index : -1))
+    .filter((index) => index !== -1)
+
+  if (topChoices.length > 1) {
+    message.value = "It's a tie!"
+  } else {
+    const chosenIndex = topChoices[0]
+    isCorrect.value = chosenIndex === correctAnswerIndex.value
+    message.value = isCorrect.value
+      ? 'Correct! Nieuwe vorm wordt geladen...'
+      : 'Het goede antwoord was: ' +
+        currentShapes[correctAnswerIndex.value].name +
+        '. Nieuwe vorm wordt geladen...'
+  }
   setTimeout(loadNewGroup, 2000)
 }
 

@@ -95,6 +95,10 @@ defineEmits(['select'])
 .shape-button.correct {
   color: #f7ecd8;
 }
+.shape-button:focus {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
 
 .shape-button.wrong::before {
   background-color: #a40034;
