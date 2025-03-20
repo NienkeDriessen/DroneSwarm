@@ -14,6 +14,7 @@
     >
       {{ shape.name }}
       <img :src="shape.image" alt="Button icon" class="button_icon" id="icon" />
+      <a class="count_nr">{{ clickCounts ? clickCounts[index] : '' }}</a>
     </button>
   </div>
 </template>
@@ -30,6 +31,7 @@ defineProps({
   shapes: Array as () => Shape[],
   selectedButton: Number,
   isCorrect: Boolean,
+  clickCounts: Array as () => number[],
 })
 
 // Define the event emitted
@@ -55,9 +57,9 @@ defineEmits(['select'])
 }
 
 .shape-button {
-  position: relative; /* Enables positioning for pseudo-elements */
-  background-color: #6f1d77; /* Foreground button color */
-  border: 4px solid #6f1d77; /* Border color */
+  position: relative;
+  background-color: #6f1d77;
+  border: 4px solid #6f1d77;
   color: #6f1d77;
   font-size: 2rem;
   font-family: 'Arial Narrow', Arial, sans-serif;
@@ -70,22 +72,44 @@ defineEmits(['select'])
   transition:
     background-color 0.3s,
     color 0.3s;
-  border-radius: 30px 0px 30px 0px; /* Rounded corners for the foreground */
-  z-index: 5; /* Ensure the foreground is above */
+  border-radius: 30px 0px 30px 0px;
+  z-index: 5;
+}
+
+/* Flash effect when the button is clicked (active state) */
+.shape-button:active {
+  background-color: #ff0; /* Flash color */
+  border-color: #ff0; /* Flash border color */
+  animation: flash 0.3s ease-in-out; /* Optional: adding quick animation */
+}
+
+@keyframes flash {
+  0% {
+    background-color: #f04fff;
+    border-color: #61f019;
+  }
+  50% {
+    background-color: #ff0; /* Flash color */
+    border-color: rgb(242, 34, 194); /* Flash border color */
+  }
+  100% {
+    background-color: #3da5ff;
+    border-color: #ffb404;
+  }
 }
 
 /* Add the background shape using a pseudo-element */
 .shape-button::before {
-  content: ''; /* Creates the background element */
+  content: '';
   position: absolute;
-  top: -14px; /* Offset slightly down */
-  left: -20px; /* Offset slightly to the right */
-  width: 103%; /* Match the size of the button */
+  top: -14px;
+  left: -20px;
+  width: 103%;
   height: 103%;
-  background-color: #f7ecd8; /* Background shape color */
+  background-color: #f7ecd8;
   border: 4px solid #6f1d77;
-  border-radius: 30px 0px 30px 0px; /* Match the shape of the button */
-  z-index: -1; /* Places the background below the button */
+  border-radius: 30px 0px 30px 0px;
+  z-index: -1;
   box-sizing: border-box;
 }
 
@@ -95,9 +119,9 @@ defineEmits(['select'])
 .shape-button.correct {
   color: #f7ecd8;
 }
+
 .shape-button:focus {
   -webkit-tap-highlight-color: transparent;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
 .shape-button.wrong::before {
@@ -106,5 +130,11 @@ defineEmits(['select'])
 
 .shape-button.wrong {
   color: #f7ecd8;
+}
+
+.count_nr {
+  position: absolute;
+  right: 10%;
+  top: 10%;
 }
 </style>

@@ -9,6 +9,7 @@
       :shapes="currentShapes"
       :selectedButton="selectedButton"
       :isCorrect="isCorrect"
+      :clickCounts="votes"
       @select="vote"
     />
 
