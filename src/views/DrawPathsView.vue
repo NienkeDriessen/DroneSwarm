@@ -1,10 +1,10 @@
 <template>
   <div class="path-drawing">
     <div class="control-row">
-      <button @click="goBack" class="back-button">Back</button>
+      <button @click="goBack" class="back-button">Terug</button>
       <div class="title-col">
-        <h1 class="title">Create Your Path</h1>
-        <p class="sub-title">Click on the grid squares to draw the path</p>
+        <h1 class="title">Teken een pad voor de drones!</h1>
+        <p class="sub-title">Klik of sleep over het raster om een pad te tekenen.</p>
       </div>
       <div class="mode-toggle">
         <button
@@ -350,7 +350,7 @@ const goBack = () => {
 }
 .title {
   color: #6f1d77;
-  font-size: 4.75rem;
+  font-size: 3rem;
   font-family: mainFont, 'Arial Narrow', Arial, sans-serif;
   height: 10vh;
 }
@@ -446,15 +446,22 @@ const goBack = () => {
 }
 
 #undo-button {
-  background-color: #ff99ff;
+  background-color: #6f1d77;
+  color: #f7ecd8;
 }
 
 #complete-button {
-  background-color: #d8f103;
+  background-color: #6f1d77;
+  color: #f7ecd8;
 }
 
 #reset-button {
-  background-color: #ffe5ff;
+  background-color: #6f1d77;
+  color: #f7ecd8;
+}
+
+#undo-button:focus #complete-butt:focus #reset-button:focus {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mode-button {

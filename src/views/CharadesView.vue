@@ -1,6 +1,6 @@
 <template>
   <div class="charades-container">
-    <button @click="goBack" class="back-button">Back</button>
+    <button @click="goBack" class="back-button">Terug</button>
     <h1 class="title">Raad de vorm!</h1>
     <p class="sub-title">Stem op de vorm die je de drones ziet vliegen</p>
     <div class="countdown-timer" v-if="countdown > 0">{{ countdown }}</div>

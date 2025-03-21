@@ -85,11 +85,11 @@ defineEmits(['select'])
 
 @keyframes flash {
   0% {
-    background-color: #f04fff;
-    border-color: #61f019;
+    background-color: #ffe5ff;
+    border-color: #d8f103;
   }
   50% {
-    background-color: #ff0; /* Flash color */
+    background-color: #ff99ff; /* Flash color */
     border-color: rgb(242, 34, 194); /* Flash border color */
   }
   100% {
