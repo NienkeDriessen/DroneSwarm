@@ -1,7 +1,7 @@
 <template>
   <div class="charades-container">
     <button @click="goBack" class="back-button">Terug</button>
-    <h1 class="title">Raad de vorm!</h1>
+    <h1 class="title">Raad de vorm</h1>
     <p class="sub-title">Stem op de vorm die je de drones ziet vliegen</p>
     <div class="countdown-timer" v-if="countdown > 0">{{ countdown }}</div>
     <!-- Use the ShapeButtonGrid Component -->
@@ -166,22 +166,22 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
     const dronesArray = createDroneArray(updates)
 
     axios
-    .post(droneEndpoint, dronesArray, { timeout: 2000 })
+      .post(droneEndpoint, dronesArray, { timeout: 2000 })
       .then((response) => {
-        console.log(response);
+        console.log(response)
       })
       .catch((error) => {
         if (error.response) {
-          console.log("SERVER ERROR");
-          console.log(error.response);
+          console.log('SERVER ERROR')
+          console.log(error.response)
         } else if (error.request) {
-          console.log("NETWORK ERROR: " + error.message);
-          console.log(error.request);
-          console.log(error.toJSON());
+          console.log('NETWORK ERROR: ' + error.message)
+          console.log(error.request)
+          console.log(error.toJSON())
         } else {
-          console.log('ERROR', error.message);
+          console.log('ERROR', error.message)
         }
-      });
+      })
 
     stepIndex++
   }, 1000)

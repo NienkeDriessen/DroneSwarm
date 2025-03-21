@@ -25,10 +25,10 @@
     />
     <div class="button-container">
       <router-link to="/charades">
-        <button class="styled-button">Raad de vorm!</button>
+        <button class="styled-button">Raad de vorm</button>
       </router-link>
       <router-link to="/draw-your-own-path">
-        <button class="styled-button">Teken je eigen pad!</button>
+        <button class="styled-button">Teken je eigen pad</button>
       </router-link>
     </div>
   </div>

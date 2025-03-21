@@ -3,8 +3,8 @@
     <div class="control-row">
       <button @click="goBack" class="back-button">Terug</button>
       <div class="title-col">
-        <h1 class="title">Teken een pad voor de drones!</h1>
-        <p class="sub-title">Klik of sleep over het raster om een pad te tekenen.</p>
+        <h1 class="title">Teken een pad voor de drones</h1>
+        <p class="sub-title">Klik of sleep over het raster om een pad te tekenen</p>
         <div class="countdown-timer">{{ countdown_value }}</div>
       </div>
       <!-- <div class="mode-toggle">
@@ -76,8 +76,8 @@
         <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
-    <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" />
+    <!-- <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" /> -->
   </div>
 </template>
 
