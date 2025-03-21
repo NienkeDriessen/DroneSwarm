@@ -6,7 +6,7 @@
         <h1 class="title">Teken een pad voor de drones!</h1>
         <p class="sub-title">Klik of sleep over het raster om een pad te tekenen.</p>
       </div>
-      <div class="mode-toggle">
+      <!-- <div class="mode-toggle">
         <button
           id="path-mode-button"
           :class="['mode-button', currentMode === Mode.PATH ? 'active' : '']"
@@ -21,7 +21,7 @@
         >
           Shape the drones!
         </button>
-      </div>
+      </div> -->
     </div>
     <!-- Grid container with overlay for lines -->
     <div
@@ -66,9 +66,9 @@
     <!-- Control buttons -->
     <div class="control-row">
       <div class="button-container">
-        <button id="undo-button" @click="undo" class="control-button">Undo</button>
+        <button id="undo-button" @click="undo" class="control-button">Ongedaan maken</button>
         <button id="reset-button" @click="resetPath" class="control-button">Reset</button>
-        <button id="complete-button" @click="completePath" class="control-button">Done</button>
+        <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
 
@@ -433,9 +433,10 @@ const goBack = () => {
 }
 
 .back-button {
+  position: absolute;
   padding: 1rem 2rem;
-  margin-left: 1vw;
-  margin-top: 1vh;
+  left: 3vw;
+  top: 4vh;
   font-size: 1rem;
   cursor: pointer;
   background-color: #6f1d77;
