@@ -95,7 +95,7 @@ enum Mode {
 }
 
 
-const DRONES_API_URL = 'http://145.94.163.34:3000/api/drones';
+const DRONES_API_URL = 'http://145.94.151.121:3000/api/drones';
 const POLLING_INTERVAL = 50;
 
 const drones = ref<Drone[]>([]);
@@ -366,17 +366,17 @@ const completePath = () => {
 //  ----- New function to map and send coordinates -----
 
 // These constants define the real-life space that your UI grid maps to.
-const REAL_ORIGIN = { x: -1.8, y: 0.0 }; // Adjust origin as needed.
-const REAL_WIDTH = 3.5; // Total width in real-life units.
+const REAL_ORIGIN = { y: 1.8, z: 0.0 }; // Adjust origin as needed.
+const REAL_WIDTH = 3.9; // Total width in real-life units.
 const REAL_HEIGHT = 2.5; // Total height in real-life units.
-const FIXED_Z = 1.0; // Fixed third coordinate for 2D drawing.
+const FIXED_X = 0.0; // Fixed third coordinate for 2D drawing.
 
 // Map a UI grid coordinate (with x,y) to real-life coordinates.
 function mapGridToReal(coord: Coordinate) {
   return {
-    x: REAL_ORIGIN.x + (coord.x + 0.5) * (REAL_WIDTH / cols),
-    y: REAL_ORIGIN.y + (coord.y + 0.5) * (REAL_HEIGHT / rows),
-    z: FIXED_Z,
+    x: FIXED_X,
+    y: REAL_ORIGIN.y - (coord.x+0.1) * (REAL_WIDTH / cols),
+    z: REAL_ORIGIN.z + ((rows-0.1) - coord.y) * (REAL_HEIGHT / rows),
   };
 }
 
