@@ -31,6 +31,10 @@
       @mouseup="endDrag"
       @mouseleave="endDrag"
       @mousemove="handleDrag"
+      @touchstart.prevent="startTouch"
+      @touchmove.prevent="handleTouch"
+      @touchend.prevent="endTouch"
+      @touchcancel.prevent="endTouch"
       :style="{
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
@@ -72,23 +76,22 @@
         <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
-
-    <!-- Drone Status Overview -->
-    <DroneStatus v-if="currentMode === Mode.POINTS" :drones="drones" />
+    <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import axios from 'axios'
 import { useRouter } from 'vue-router'
-
 import {
   doLinesIntersect,
   generateIntermediatePoints,
   type Coordinate,
 } from '../assets/GeometryTools'
-
 import DroneStatus from '../components/DroneStatus.vue'
+import DroneRadar3 from '../components/DroneRadar3.vue'
 import Drone from '../models/Drone'
 
 enum Mode {
@@ -96,32 +99,68 @@ enum Mode {
   POINTS = 'points',
 }
 
-const drones = ref<Drone[]>([
-  new Drone(1, true),
-  new Drone(2, true),
-  new Drone(3, true),
-  new Drone(4, true),
-  new Drone(5, false),
-  new Drone(6, false),
-  new Drone(7, false),
-  new Drone(8, false),
-])
+const DRONES_API_URL = 'http://145.94.151.121:3000/api/drones'
+const POLLING_INTERVAL = 50
 
-// Helper to count available drones
+const drones = ref<Drone[]>([])
+
+// Define the expected structure of the incoming drone data
+interface DroneData {
+  bat_level: number
+  pos_x: number
+  pos_y: number
+  pos_z: number
+  vel_x: number
+  vel_y: number
+  vel_z: number
+}
+
+// Fetch drones data
+const fetchDronesData = () => {
+  axios
+    .get(DRONES_API_URL)
+    .then((response) => {
+      const dronesData: Record<string, DroneData> = response.data // Enforce type safety
+
+      // Map drones_data structure to Drone instances
+      drones.value = Object.entries(dronesData).map(
+        ([id, data]) =>
+          new Drone(
+            parseInt(id), // Drone ID
+            true, // Assume drones are available unless there's additional info
+            [], // Empty assignedPoints (or modify if necessary)
+            data.bat_level, // Battery Level
+            { x: data.pos_x, y: data.pos_y, z: data.pos_z }, // Position
+            { x: data.vel_x, y: data.vel_y, z: data.vel_z }, // Velocity
+          ),
+      )
+    })
+    .catch((error) => {
+      console.error('Error fetching drones data:', error)
+    })
+}
+
+let pollingIntervalId: number | null = null
+onMounted(() => {
+  fetchDronesData()
+  pollingIntervalId = window.setInterval(fetchDronesData, POLLING_INTERVAL)
+})
+
+onUnmounted(() => {
+  if (pollingIntervalId !== null) {
+    clearInterval(pollingIntervalId)
+  }
+})
+
 const availableDronesCount = computed(() => drones.value.filter((drone) => drone.available).length)
 
-// Define the grid size
-const rows = 14
-const cols = 18
+const rows = 8
+const cols = 15
 const maxGridWidth = 700
 const maxGridHeight = 500
-const gap = 2 // Gap size between cells
-const countdown_max = 15
-let countdown_value = countdown_max
+const gap = 1
+const maxStepSize = 0.5
 
-const maxStepSize = 0.5 // the max length one step can have
-
-// Calculate cell size based on the max dimensions and number of cells including gaps
 const cellSize = Math.min(
   (maxGridWidth - gap * (cols - 1)) / cols,
   (maxGridHeight - gap * (rows - 1)) / rows,
@@ -215,6 +254,32 @@ const handleDrag = (event: MouseEvent) => {
   }
 }
 
+// New functions for touch event support
+const startTouch = () => {
+  if (currentMode.value === Mode.PATH) {
+    isDragging.value = true
+  }
+}
+
+const handleTouch = (event: TouchEvent) => {
+  if (!isDragging.value || currentMode.value !== Mode.PATH) return
+  const touch = event.touches[0]
+  const gridContainer = (event.target as HTMLElement).closest('.grid-container')
+  if (!gridContainer) return
+  const rect = gridContainer.getBoundingClientRect()
+  const x = Math.floor((touch.clientX - rect.left) / cellSize)
+  const y = Math.floor((touch.clientY - rect.top) / cellSize)
+  const index = y * cols + x
+
+  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
+    toggleCell(index)
+  }
+}
+
+const endTouch = () => {
+  isDragging.value = false
+}
+
 const toggleCell = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) }
 
@@ -304,8 +369,9 @@ const completePath = () => {
 
     console.log('Path completed with coordinates:', pathCoordinates.value)
     console.log('Path waypoints including intermediate points:', waypoints.value)
+    sendPathCoordinates()
     showNotification('Path and waypoints are ready!')
-  } else if (currentMode.value === 'points') {
+  } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
       showNotification('You have assigned more points than the number of available drones!')
@@ -328,6 +394,71 @@ const completePath = () => {
   } else {
     showNotification('Invalid mode selected!')
   }
+}
+
+//  ----- New function to map and send coordinates -----
+
+// These constants define the real-life space that your UI grid maps to.
+const REAL_ORIGIN = { y: 1.8, z: 0.0 } // Adjust origin as needed.
+const REAL_WIDTH = 3.9 // Total width in real-life units.
+const REAL_HEIGHT = 2.5 // Total height in real-life units.
+const FIXED_X = 0.0 // Fixed third coordinate for 2D drawing.
+
+// Map a UI grid coordinate (with x,y) to real-life coordinates.
+function mapGridToReal(coord: Coordinate) {
+  return {
+    x: FIXED_X,
+    y: REAL_ORIGIN.y - coord.x * (REAL_WIDTH / cols),
+    z: REAL_ORIGIN.z + (rows - coord.y) * (REAL_HEIGHT / rows),
+  }
+}
+
+// Replace the existing sendPathCoordinates function with this version:
+const sendPathCoordinates = async () => {
+  const availableDrones = drones.value.filter((drone) => drone.available)
+  const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
+  const SENDING_INTERVAL = 200 // adjust sending rate (ms) as needed
+  let index = 0
+
+  const intervalId = setInterval(() => {
+    if (index >= mappedWaypoints.length) {
+      clearInterval(intervalId)
+      return
+    }
+
+    const waypoint = mappedWaypoints[index]
+    // Each packet is an array of update objects (one per available drone)
+    // where each update uses the original receiving keys "pos_x", "pos_y", "pos_z".
+    const updates = availableDrones.map((drone) => ({
+      droneId: drone.id,
+      pos_x: waypoint.x,
+      pos_y: waypoint.y,
+      pos_z: waypoint.z,
+      vel_x: 0.0,
+      vel_y: 0.0,
+      vel_z: 0.0,
+    }))
+
+    axios
+      .post(DRONES_API_URL, updates, { timeout: 2000 })
+      .then((response) => {
+        console.log(response)
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log('SERVER ERROR')
+          console.log(error.response)
+        } else if (error.request) {
+          console.log('NETWORK ERROR: ' + error.message)
+          console.log(error.request)
+          console.log(error.toJSON())
+        } else {
+          console.log('ERROR', error.message)
+        }
+      })
+
+    index++
+  }, SENDING_INTERVAL)
 }
 
 // Go back function to navigate to the previous page

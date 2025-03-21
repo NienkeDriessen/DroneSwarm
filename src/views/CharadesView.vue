@@ -165,34 +165,23 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
 
     const dronesArray = createDroneArray(updates)
 
-    console.log('dronesArray is : ', dronesArray)
-
-    try {
-      // Send data to the endpoint
-      await axios.post(droneEndpoint, dronesArray)
-      console.log(`Sent waypoint ${stepIndex + 1}/${waypoints.length}:`, dronesArray)
-    } catch (error) {
-      console.error('Error sending data to drone endpoint:', error)
-    }
-    console.log('dummy sending drone array: ', dronesArray)
-
-    // axios
-    //   .post(droneEndpoint, dronesArray, { timeout: 2000 })
-    //   .then((response) => {
-    //     console.log(response)
-    //   })
-    //   .catch((error) => {
-    //     if (error.response) {
-    //       console.log('SERVER ERROR')
-    //       console.log(error.response)
-    //     } else if (error.request) {
-    //       console.log('NETWORK ERROR: ' + error.message)
-    //       console.log(error.request)
-    //       console.log(error.toJSON())
-    //     } else {
-    //       console.log('ERROR', error.message)
-    //     }
-    //   })
+    axios
+    .post(droneEndpoint, dronesArray, { timeout: 2000 })
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log("SERVER ERROR");
+          console.log(error.response);
+        } else if (error.request) {
+          console.log("NETWORK ERROR: " + error.message);
+          console.log(error.request);
+          console.log(error.toJSON());
+        } else {
+          console.log('ERROR', error.message);
+        }
+      });
 
     stepIndex++
   }, 1000)
