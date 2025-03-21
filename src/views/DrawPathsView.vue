@@ -154,12 +154,14 @@ onUnmounted(() => {
 
 const availableDronesCount = computed(() => drones.value.filter((drone) => drone.available).length)
 
-const rows = 8
-const cols = 15
+const rows = 14
+const cols = 18
 const maxGridWidth = 700
 const maxGridHeight = 500
-const gap = 1
+const gap = 2
 const maxStepSize = 0.5
+const countdown_max = 25
+let countdown_value = countdown_max
 
 const cellSize = Math.min(
   (maxGridWidth - gap * (cols - 1)) / cols,
