@@ -46,7 +46,7 @@
           :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
           :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
           :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-          :stroke="segment.intersecting ? '#DB1F22' : '#ff99ff'"
+          :stroke="segment.intersecting ? '#DB1F22' : '#6f1d77'"
           stroke-width="8"
         />
       </svg>
@@ -110,11 +110,11 @@ const drones = ref<Drone[]>([
 const availableDronesCount = computed(() => drones.value.filter((drone) => drone.available).length)
 
 // Define the grid size
-const rows = 8
-const cols = 15
+const rows = 14
+const cols = 18
 const maxGridWidth = 700
 const maxGridHeight = 500
-const gap = 1 // Gap size between cells
+const gap = 2 // Gap size between cells
 
 const maxStepSize = 0.5 // the max length one step can have
 
@@ -160,9 +160,9 @@ watch(currentMode, (newMode, oldMode) => {
     resetPath()
   }
 })
-const setMode = (mode: Mode) => {
-  currentMode.value = mode
-}
+// const setMode = (mode: Mode) => {
+//   currentMode.value = mode
+// }
 
 const lineSegments = computed(() => {
   const segments = pathCoordinates.value.slice(1).map((end, index) => ({
@@ -350,7 +350,7 @@ const goBack = () => {
 }
 .title {
   color: #6f1d77;
-  font-size: 3rem;
+  font-size: 4rem;
   font-family: mainFont, 'Arial Narrow', Arial, sans-serif;
   height: 10vh;
 }
@@ -384,13 +384,18 @@ const goBack = () => {
   width: 20px;
   height: 20px;
   background-color: #f7ecd8;
-  border: 2px solid #6f1d77;
+  border: 2px solid #ccacc9;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
 .grid-cell.active {
-  background-color: #6f1d77; /* Active cell color */
+  background-color: #ff99ff; /* Active cell color */
+  border: 7px solid #6f1d77;
+  z-index: 100;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(0.95);
 }
 
 /* .grid-cell::after {
@@ -449,16 +454,19 @@ const goBack = () => {
 #undo-button {
   background-color: #6f1d77;
   color: #f7ecd8;
+  font-size: 1.7rem;
 }
 
 #complete-button {
   background-color: #6f1d77;
   color: #f7ecd8;
+  font-size: 1.7rem;
 }
 
 #reset-button {
   background-color: #6f1d77;
   color: #f7ecd8;
+  font-size: 1.7rem;
 }
 
 #undo-button:focus #complete-butt:focus #reset-button:focus {

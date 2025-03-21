@@ -76,13 +76,6 @@ defineEmits(['select'])
   z-index: 5;
 }
 
-/* Flash effect when the button is clicked (active state) */
-.shape-button:active {
-  background-color: #ff0; /* Flash color */
-  border-color: #ff0; /* Flash border color */
-  animation: flash 0.3s ease-in-out; /* Optional: adding quick animation */
-}
-
 @keyframes flash {
   0% {
     background-color: #ffe5ff;
@@ -111,6 +104,13 @@ defineEmits(['select'])
   border-radius: 30px 0px 30px 0px;
   z-index: -1;
   box-sizing: border-box;
+  transition: 0.1s ease-out;
+}
+/* Effect when the button is clicked (active state) */
+.shape-button:active::before {
+  top: -2%; /* Moves the top part down */
+  left: -2%;
+  transition: 0.1s ease-in-out; /* Smooth animation */
 }
 
 .shape-button.correct::before {
@@ -134,7 +134,10 @@ defineEmits(['select'])
 
 .count_nr {
   position: absolute;
-  right: 10%;
-  top: 10%;
+  right: 6%;
+  top: 60%;
+  color: #ff99ff;
+  font-weight: 1000;
+  font-size: 2.75rem;
 }
 </style>
