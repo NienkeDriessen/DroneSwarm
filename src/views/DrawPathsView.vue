@@ -30,6 +30,10 @@
       @mouseup="endDrag"
       @mouseleave="endDrag"
       @mousemove="handleDrag"
+      @touchstart.prevent="startTouch"
+      @touchmove.prevent="handleTouch"
+      @touchend.prevent="endTouch"
+      @touchcancel.prevent="endTouch"
       :style="{
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
@@ -251,6 +255,32 @@ const handleDrag = (event: MouseEvent) => {
     toggleCell(index)
     }
   }
+
+// New functions for touch event support
+const startTouch = () => {
+  if (currentMode.value === Mode.PATH) {
+    isDragging.value = true
+  }
+}
+
+const handleTouch = (event: TouchEvent) => {
+  if (!isDragging.value || currentMode.value !== Mode.PATH) return
+  const touch = event.touches[0]
+  const gridContainer = (event.target as HTMLElement).closest('.grid-container')
+  if (!gridContainer) return
+  const rect = gridContainer.getBoundingClientRect()
+  const x = Math.floor((touch.clientX - rect.left) / cellSize)
+  const y = Math.floor((touch.clientY - rect.top) / cellSize)
+  const index = y * cols + x
+
+  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
+    toggleCell(index)
+  }
+}
+
+const endTouch = () => {
+  isDragging.value = false
+}
 
 const toggleCell = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) }
