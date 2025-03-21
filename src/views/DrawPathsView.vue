@@ -5,6 +5,7 @@
       <div class="title-col">
         <h1 class="title">Teken een pad voor de drones!</h1>
         <p class="sub-title">Klik of sleep over het raster om een pad te tekenen.</p>
+        <div class="countdown-timer">{{ countdown_value }}</div>
       </div>
       <!-- <div class="mode-toggle">
         <button
@@ -115,6 +116,8 @@ const cols = 18
 const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2 // Gap size between cells
+const countdown_max = 15
+let countdown_value = countdown_max
 
 const maxStepSize = 0.5 // the max length one step can have
 
@@ -217,8 +220,11 @@ const toggleCell = (index: number) => {
 
   if (currentMode.value === Mode.PATH) {
     if (!grid.value[index].active) {
-      grid.value[index] = { active: true }
-      pathCoordinates.value.push(point)
+      if (pathCoordinates.value.length < countdown_max) {
+        grid.value[index] = { active: true }
+        pathCoordinates.value.push(point)
+        countdown_value = countdown_max - pathCoordinates.value.length
+      }
     }
   } else if (currentMode.value === Mode.POINTS) {
     const droneIndex = dronePoints.value.findIndex(
@@ -247,6 +253,7 @@ const undo = () => {
     const lastPoint = pathCoordinates.value.pop()!
     const index = lastPoint.y * cols + lastPoint.x
     grid.value[index] = { active: false }
+    countdown_value = countdown_max - pathCoordinates.value.length
   } else if (currentMode.value === Mode.POINTS && dronePoints.value.length > 0) {
     const lastPoint = dronePoints.value.pop()!
     const index = lastPoint.point.y * cols + lastPoint.point.x
@@ -259,6 +266,7 @@ const resetPath = () => {
   dronePoints.value = []
   waypoints.value = []
   grid.value = Array(rows * cols).fill({ active: false })
+  countdown_value = countdown_max - pathCoordinates.value.length
 }
 
 const completePath = () => {
@@ -333,6 +341,16 @@ const goBack = () => {
 @font-face {
   font-family: mainFont;
   src: url('@/assets/Alkaline_Caps_Heavy.otf');
+}
+.countdown-timer {
+  position: absolute;
+  top: 3vh;
+  right: 5vw;
+  /* color: #ff99ff; */
+  color: #6f1d77;
+  font-size: 4.75rem;
+  font-family: mainFont, 'Arial Narrow', Arial, sans-serif;
+  height: 10vh;
 }
 
 .control-row {
