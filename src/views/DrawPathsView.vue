@@ -375,8 +375,8 @@ const FIXED_X = 0.0; // Fixed third coordinate for 2D drawing.
 function mapGridToReal(coord: Coordinate) {
   return {
     x: FIXED_X,
-    y: REAL_ORIGIN.y - (coord.x+0.1) * (REAL_WIDTH / cols),
-    z: REAL_ORIGIN.z + ((rows-0.1) - coord.y) * (REAL_HEIGHT / rows),
+    y: REAL_ORIGIN.y - (coord.x) * (REAL_WIDTH / cols),
+    z: REAL_ORIGIN.z + ((rows) - coord.y) * (REAL_HEIGHT / rows),
   };
 }
 
