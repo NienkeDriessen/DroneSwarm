@@ -3,7 +3,10 @@
     <button @click="goBack" class="back-button">Terug</button>
     <h1 class="title">Raad de vorm</h1>
     <p class="sub-title">Stem op de vorm die je de drones ziet vliegen</p>
-    <div class="countdown-timer" v-if="countdown > 0">{{ countdown }}</div>
+    <div class="countdown-timer">
+      <button v-if="!started" @click="startCountdown" class="start-button">Start</button>
+      <span v-else>{{ countdown }}</span>
+    </div>
     <!-- Use the ShapeButtonGrid Component -->
     <ShapeButtonGrid
       :shapes="currentShapes"
@@ -48,6 +51,21 @@ const votes = reactive<number[]>([])
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
+
+const started = ref(false) // Track if countdown has started
+
+const startCountdown = () => {
+  started.value = true
+  countdown.value = countdown_value
+
+  const timer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(timer)
+      evaluateResults()
+    }
+  }, 1000)
+}
 
 // Helper function for generating intermediate points between two defined points in the shape data
 function generateIntermediatePoints(
@@ -248,28 +266,8 @@ const loadNewGroup = () => {
 
   // Reset counter
   countdown.value = countdown_value
-  const timer = setInterval(() => {
-    countdown.value--
-    if (countdown.value < 0) {
-      evaluateResults()
-      clearInterval(timer)
-    }
-  }, 1000)
+  started.value = false
 }
-
-// const checkAnswer = (index: number) => {
-//   selectedButton.value = index
-//   isCorrect.value = index === correctAnswerIndex.value
-
-//   message.value = isCorrect.value
-//     ? 'Correct! Nieuwe vorm wordt geladen...'
-//     : 'Het goede antwoord was: ' +
-//       currentShapes[correctAnswerIndex.value].name +
-//       '. Nieuwe vorm wordt geladen...'
-
-//   // Here we might have to wait until drones are in new position?
-//   setTimeout(loadNewGroup, 2000)
-// }
 
 const vote = (index: number) => {
   votes[index]++
@@ -352,5 +350,17 @@ const goBack = () => router.back()
   border: 0px solid #f7ecd8;
   border-radius: 4px;
   align-self: flex-start;
+}
+
+.start-button {
+  background-color: #6f1d77;
+  color: #f7ecd8;
+  font-size: 1.5rem;
+  border: 3px solid #6f1d77;
+  padding: 1em 1.5em;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background-color 0.3s;
+  font-family: 'Arial Narrow', Arial, sans-serif;
 }
 </style>
