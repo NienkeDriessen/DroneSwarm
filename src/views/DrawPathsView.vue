@@ -76,8 +76,8 @@
         <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
-    <!-- <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" /> -->
+    <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" />
   </div>
 </template>
 
@@ -99,7 +99,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://145.94.151.121:3000/api/drones'
+const DRONES_API_URL = 'http://145.94.63.16:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 const drones = ref<Drone[]>([])
@@ -420,26 +420,41 @@ const sendPathCoordinates = async () => {
   const availableDrones = drones.value.filter((drone) => drone.available)
   const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
   const SENDING_INTERVAL = 200 // adjust sending rate (ms) as needed
+  const DRONE_OFFSET = 5       // offset in waypoint steps between following drones
   let index = 0
 
   const intervalId = setInterval(() => {
-    if (index >= mappedWaypoints.length) {
+    // Ensure we run a few extra iterations so trailing drones can reach the end
+    if (index >= mappedWaypoints.length + (availableDrones.length - 1) * DRONE_OFFSET) {
       clearInterval(intervalId)
       return
     }
 
-    const waypoint = mappedWaypoints[index]
-    // Each packet is an array of update objects (one per available drone)
-    // where each update uses the original receiving keys "pos_x", "pos_y", "pos_z".
-    const updates = availableDrones.map((drone) => ({
-      droneId: drone.id,
-      pos_x: waypoint.x,
-      pos_y: waypoint.y,
-      pos_z: waypoint.z,
-      vel_x: 0.0,
-      vel_y: 0.0,
-      vel_z: 0.0,
-    }))
+    // For each drone, calculate an offset based on its position in availableDrones.
+    const updates = availableDrones.map((drone, dIndex) => {
+      const waypointIndex = index - dIndex * DRONE_OFFSET
+      let waypoint: { x: number; y: number; z: number }
+
+      if (waypointIndex < 0) {
+        // Before starting, hold on at the first waypoint.
+        waypoint = mappedWaypoints[0]
+      } else if (waypointIndex >= mappedWaypoints.length) {
+        // After finishing the path, remain at the last waypoint.
+        waypoint = mappedWaypoints[mappedWaypoints.length - 1]
+      } else {
+        waypoint = mappedWaypoints[waypointIndex]
+      }
+
+      return {
+        droneId: drone.id,
+        pos_x: waypoint.x,
+        pos_y: waypoint.y,
+        pos_z: waypoint.z,
+        vel_x: 0.0,
+        vel_y: 0.0,
+        vel_z: 0.0,
+      }
+    })
 
     axios
       .post(DRONES_API_URL, updates, { timeout: 2000 })
