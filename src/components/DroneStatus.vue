@@ -8,7 +8,8 @@
       height: isMinimized ? '75px' : size.height
     }"
   >
-    <div class="drone-status-header" @mousedown="startDrag">
+    <!-- Added touch support by listening for touchstart on the header -->
+    <div class="drone-status-header" @mousedown="startDrag" @touchstart="startDrag">
       <h3>Drone Status</h3>
       <button @click.stop="toggleMinimize">
         {{ isMinimized ? 'Maximize' : 'Minimise' }}
@@ -74,26 +75,55 @@ const toggleMinimize = () => {
   isMinimized.value = !isMinimized.value;
 };
 
-const startDrag = (event: MouseEvent) => {
-  const initialX = event.clientX;
-  const initialY = event.clientY;
+const startDrag = (event: MouseEvent | TouchEvent) => {
+  // If the event started on a button (minimize/maximize), do not drag.
+  const target = event.target as HTMLElement;
+  if (target.closest('button')) return;
+
+  event.preventDefault();
+  let startX: number, startY: number;
+  if ('touches' in event) {
+    startX = event.touches[0].clientX;
+    startY = event.touches[0].clientY;
+  } else {
+    startX = event.clientX;
+    startY = event.clientY;
+  }
+
   const startTop = parseInt(position.value.top, 10);
   const startLeft = parseInt(position.value.left, 10);
 
-  const onMouseMove = (moveEvent: MouseEvent) => {
-    position.value = {
-      top: `${startTop + (moveEvent.clientY - initialY)}px`,
-      left: `${startLeft + (moveEvent.clientX - initialX)}px`
-    };
+  const onMove = (moveEvent: MouseEvent | TouchEvent) => {
+    moveEvent.preventDefault();
+    let currentX: number, currentY: number;
+    if ('touches' in moveEvent) {
+      currentX = moveEvent.touches[0].clientX;
+      currentY = moveEvent.touches[0].clientY;
+    } else {
+      currentX = moveEvent.clientX;
+      currentY = moveEvent.clientY;
+    }
+    requestAnimationFrame(() => {
+      position.value = {
+        top: `${startTop + (currentY - startY)}px`,
+        left: `${startLeft + (currentX - startX)}px`
+      };
+    });
   };
 
-  const onMouseUp = () => {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
+  const onEnd = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    document.removeEventListener('touchcancel', onEnd);
   };
 
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
+  document.addEventListener('touchcancel', onEnd);
 };
 
 const startResize = (event: MouseEvent) => {

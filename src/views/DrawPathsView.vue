@@ -99,7 +99,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://145.94.63.16:3000/api/drones'
+const DRONES_API_URL = 'http://145.94.190.242:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 const drones = ref<Drone[]>([])

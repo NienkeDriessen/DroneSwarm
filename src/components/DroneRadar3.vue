@@ -8,7 +8,8 @@
       height: isMinimized ? '75px' : containerSize.height
     }"
   >
-    <div class="drone-radar-header" @mousedown="startDrag">
+    <!-- Added touchstart on header for dragging -->
+    <div class="drone-radar-header" @mousedown="startDrag" @touchstart="startDrag">
       <span>Drone Radar</span>
       <button @click.stop="toggleMinimize">
         {{ isMinimized ? 'Maximize' : 'Minimise' }}
@@ -34,28 +35,63 @@ const isMinimized = ref(false);
 const position = ref({ top: '50px', left: '50px' });
 const containerSize = ref({ width: '500px', height: '500px' });
 
-const toggleMinimize = () => { isMinimized.value = !isMinimized.value; };
-
-const startDrag = (event: MouseEvent) => {
-  const initialX = event.clientX;
-  const initialY = event.clientY;
-  const startTop = parseInt(position.value.top, 10);
-  const startLeft = parseInt(position.value.left, 10);
-  const onMouseMove = (moveEvent: MouseEvent) => {
-    position.value = {
-      top: `${startTop + (moveEvent.clientY - initialY)}px`,
-      left: `${startLeft + (moveEvent.clientX - initialX)}px`
-    };
-  };
-  const onMouseUp = () => {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  };
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
+const toggleMinimize = () => {
+  isMinimized.value = !isMinimized.value;
 };
 
-// Three.js scene setup
+// Updated startDrag to support mouse and touch events while preserving clicks on the toggle button.
+const startDrag = (event: MouseEvent | TouchEvent) => {
+  // Do not initiate drag if a button was clicked.
+  const target = event.target as HTMLElement;
+  if (target.closest('button')) return;
+
+  event.preventDefault();
+  let startX: number, startY: number;
+  if ('touches' in event) {
+    startX = event.touches[0].clientX;
+    startY = event.touches[0].clientY;
+  } else {
+    startX = event.clientX;
+    startY = event.clientY;
+  }
+
+  const startTop = parseInt(position.value.top, 10);
+  const startLeft = parseInt(position.value.left, 10);
+
+  const onMove = (moveEvent: MouseEvent | TouchEvent) => {
+    moveEvent.preventDefault();
+    let currentX: number, currentY: number;
+    if ('touches' in moveEvent) {
+      currentX = moveEvent.touches[0].clientX;
+      currentY = moveEvent.touches[0].clientY;
+    } else {
+      currentX = moveEvent.clientX;
+      currentY = moveEvent.clientY;
+    }
+    requestAnimationFrame(() => {
+      position.value = {
+        top: `${startTop + (currentY - startY)}px`,
+        left: `${startLeft + (currentX - startX)}px`
+      };
+    });
+  };
+
+  const onEnd = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    document.removeEventListener('touchcancel', onEnd);
+  };
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
+  document.addEventListener('touchcancel', onEnd);
+};
+
+// Three.js scene setup and other code remain unchanged
 const threeContainer = ref<HTMLElement | null>(null);
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
@@ -63,7 +99,7 @@ let renderer: THREE.WebGLRenderer;
 let labelRenderer: CSS2DRenderer;
 let controls: OrbitControls;
 let fixedBoxHelper: THREE.Box3Helper;
-let arrowsGroup: THREE.Group;  // Group that holds arrows and points
+let arrowsGroup: THREE.Group;
 
 function createAxisLabel(text: string, pos: THREE.Vector3): CSS2DObject {
   const div = document.createElement('div');
@@ -76,27 +112,19 @@ function createAxisLabel(text: string, pos: THREE.Vector3): CSS2DObject {
 }
 
 function updateArrows() {
-  // Clear existing objects from the group.
   while (arrowsGroup.children.length > 0) {
     arrowsGroup.remove(arrowsGroup.children[0]);
   }
-
-  // Create arrow (cursor) and point (sphere) for each drone.
   props.drones.forEach(drone => {
-    // Normalize the velocity vector.
     const velocity = new THREE.Vector3(drone.velocity.x, drone.velocity.y, drone.velocity.z);
     const direction = velocity.length() === 0 ? new THREE.Vector3(1, 0, 0) : velocity.normalize();
     const pos = new THREE.Vector3(drone.position.x, drone.position.y, drone.position.z);
-
-    // Arrow (cursor) with lower opacity.
     const arrow = new THREE.ArrowHelper(direction, pos, 0.12, 0x00ffff, 0.06, 0.06);
     (arrow.cone.material as THREE.MeshBasicMaterial).transparent = true;
     (arrow.cone.material as THREE.MeshBasicMaterial).opacity = 0.8;
     (arrow.line.material as THREE.LineBasicMaterial).transparent = true;
     (arrow.line.material as THREE.LineBasicMaterial).opacity = 0.8;
     arrowsGroup.add(arrow);
-
-    // Sphere (point) with full opacity.
     const sphereGeometry = new THREE.SphereGeometry(0.05, 8, 8);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
@@ -107,7 +135,6 @@ function updateArrows() {
 
 onMounted(() => {
   if (threeContainer.value) {
-    // Scene & Camera
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(
       75,
@@ -116,15 +143,12 @@ onMounted(() => {
       1000
     );
     camera.position.set(-4, 1, -2);
-    // Change the rotation order if needed to "YXZ" (optional)
-    camera.rotation.order = "YXZ";
+    camera.rotation.order = 'YXZ';
 
-    // Renderer setup
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(threeContainer.value.clientWidth, threeContainer.value.clientHeight);
     threeContainer.value.appendChild(renderer.domElement);
 
-    // CSS2D Label Renderer setup
     labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(threeContainer.value.clientWidth, threeContainer.value.clientHeight);
     labelRenderer.domElement.style.position = 'absolute';
@@ -132,17 +156,13 @@ onMounted(() => {
     labelRenderer.domElement.style.pointerEvents = 'none';
     threeContainer.value.appendChild(labelRenderer.domElement);
 
-    // OrbitControls
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Create a parent group to hold all scene objects.
     const sceneGroup = new THREE.Group();
-    // For example, rotate the entire group by -90° around X to mitigate gimbal lock.
     sceneGroup.rotation.x = -Math.PI / 2;
     scene.add(sceneGroup);
 
-    // Axes helper and labels (added to the parent group)
     const axesLength = 1;
     const axesHelper = new THREE.AxesHelper(axesLength);
     axesHelper.rotation.set(0, 0, 0);
@@ -151,19 +171,16 @@ onMounted(() => {
     sceneGroup.add(createAxisLabel('Y', new THREE.Vector3(0, axesLength, 0)));
     sceneGroup.add(createAxisLabel('Z', new THREE.Vector3(0, 0, axesLength)));
 
-    // Create and add a single arrowsGroup to the sceneGroup.
     arrowsGroup = new THREE.Group();
     sceneGroup.add(arrowsGroup);
     updateArrows();
 
-    // Create a fixed bounding box (added to the parent group)
     const domainMin = new THREE.Vector3(-1.95, -1.7, 0);
     const domainMax = new THREE.Vector3(1.45, 1.8, 2.5);
     const box = new THREE.Box3(domainMin, domainMax);
     fixedBoxHelper = new THREE.Box3Helper(box, 0xff0000);
     sceneGroup.add(fixedBoxHelper);
 
-    // Create coordinate labels at each corner (added to the parent group).
     const corners = [
       new THREE.Vector3(domainMin.x, domainMin.y, domainMin.z),
       new THREE.Vector3(domainMax.x, domainMin.y, domainMin.z),
@@ -182,9 +199,7 @@ onMounted(() => {
       sceneGroup.add(label);
     });
 
-    // Create grid helpers on all 6 faces (all added to sceneGroup).
-    const gridSize = 3.4,
-    divisions = 15, color = 0xff0000, gridOpacity = 0.3;
+    const gridSize = 3.4, divisions = 15, color = 0xff0000, gridOpacity = 0.3;
     const mid = new THREE.Vector3(
       (domainMin.x + domainMax.x) / 2,
       (domainMin.y + domainMax.y) / 2,
@@ -231,7 +246,6 @@ onMounted(() => {
     gridZMax.position.set(mid.x, mid.y, domainMax.z);
     sceneGroup.add(gridZMax);
 
-    // Animation loop
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
@@ -242,7 +256,6 @@ onMounted(() => {
   }
 });
 
-// Update arrows when drone data changes.
 watch(
   () => JSON.stringify(props.drones),
   () => {
@@ -287,7 +300,6 @@ watch(
   position: relative;
   background-color: #fafafa;
 }
-/* Axis label styles */
 .axis-label {
   font-size: 12px;
   color: #000;
