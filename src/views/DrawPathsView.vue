@@ -439,8 +439,18 @@ const sendPathCoordinates = async () => {
         // Before starting, hold on at the first waypoint.
         waypoint = mappedWaypoints[0]
       } else if (waypointIndex >= mappedWaypoints.length) {
-        // After finishing the path, remain at the last waypoint.
-        waypoint = mappedWaypoints[mappedWaypoints.length - 1]
+        // After finishing the drawn path,
+        // assign a standby point on a line in the x direction.
+        const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
+        let standbyX: number
+        if (availableDrones.length > 1) {
+          standbyX =
+            1.45 +
+            dIndex * ((-1.95 - 1.45) / (availableDrones.length - 1))
+        } else {
+          standbyX = 1.45
+        }
+        waypoint = { x: standbyX, y: finalWaypoint.y, z: finalWaypoint.z }
       } else {
         waypoint = mappedWaypoints[waypointIndex]
       }
