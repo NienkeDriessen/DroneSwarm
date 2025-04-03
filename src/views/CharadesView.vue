@@ -41,13 +41,15 @@ const isCorrect = ref(false)
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
-const uiDebug = true
+const uiDebug = false
 
 // Countdown timer
 const countdown = ref(0)
-const countdown_value = 10 // Start countdown from 10
+const countdown_value = 20 // Start countdown from 10
 // Store votes for each button
 const votes = reactive<number[]>([])
+const numDrones = 2 // We have to get this in stead of being hardcoded
+const repeatCount = 10 // Repeat the shape path 10 times
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
@@ -55,6 +57,20 @@ const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
 const started = ref(false) // Track if countdown has started
 
 const startCountdown = () => {
+  // Convert the selected shape's path to {x, y,z} format
+  const convertedPath = currentShapes[correctAnswerIndex.value].path.map(
+    ([pos_x, pos_y, pos_z]) => ({
+      pos_x,
+      pos_y,
+      pos_z,
+    }),
+  )
+
+  // Send shape path of the randomly chosen shape
+  if (!uiDebug) {
+    sendShapePath(convertedPath)
+  }
+
   started.value = true
   countdown.value = countdown_value
 
@@ -70,8 +86,8 @@ const startCountdown = () => {
 // Helper function for generating intermediate points between two defined points in the shape data
 function generateIntermediatePoints(
   droneIndex: number,
-  start: { x: number; y: number; z: number },
-  end: { x: number; y: number; z: number },
+  start: { pos_x: number; pos_y: number; pos_z: number },
+  end: { pos_x: number; pos_y: number; pos_z: number },
   steps: number,
 ) {
   const points = []
@@ -81,9 +97,9 @@ function generateIntermediatePoints(
       index: droneIndex,
       step: i,
       totalSteps: steps,
-      x: start.x + (end.x - start.x) * t,
-      y: start.y + (end.y - start.y) * t,
-      z: start.z + (end.z - start.z) * t,
+      pos_x: start.pos_x + (end.pos_x - start.pos_x) * t,
+      pos_y: start.pos_y + (end.pos_y - start.pos_y) * t,
+      pos_z: start.pos_z + (end.pos_z - start.pos_z) * t,
     })
   }
   return points
@@ -91,16 +107,16 @@ function generateIntermediatePoints(
 
 // Helper function to create an array of positions
 const createDroneArray = (
-  updates: { index: number; coordinate: { x: number; y: number; z: number } }[],
+  updates: { index: number; coordinate: { pos_x: number; pos_y: number; pos_z: number } }[],
 ) => {
   // Create an initial array
-  const dronesArray: { x: number; y: number; z: number }[] = []
+  const dronesArray: { pos_x: number; pos_y: number; pos_z: number }[] = []
 
   // Update the array based on the provided updates
   updates.forEach(({ index, coordinate }) => {
     // Ensure the array is large enough to accommodate the index
     while (dronesArray.length <= index) {
-      dronesArray.push({ x: 0, y: 0, z: 0 }) // Initialize with default coordinates
+      dronesArray.push({ pos_x: 0, pos_y: 0, pos_z: 0 }) // Initialize with default coordinates
     }
 
     // Update the specific index with the coordinate
@@ -111,13 +127,12 @@ const createDroneArray = (
 }
 
 // Send 3D shape path to drones (for each drone it's position at the time index it is sent)
-const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
+const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) => {
   const maxStepSize = 6
-  const waypoints: { x: number; y: number; z: number }[] = []
-  const numDrones = 1 // We have to get this in stead of being hardcoded
+  const waypoints: { pos_x: number; pos_y: number; pos_z: number }[] = []
 
   // Generate waypoints for each drone
-  const waypointsPerDrone: { x: number; y: number; z: number }[][] = Array.from(
+  const waypointsPerDrone: { pos_x: number; pos_y: number; pos_z: number }[][] = Array.from(
     { length: numDrones },
     () => [],
   )
@@ -127,7 +142,9 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
     const end = path[i + 1]
 
     const distance = Math.sqrt(
-      Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2) + Math.pow(end.z - start.z, 2),
+      Math.pow(end.pos_x - start.pos_x, 2) +
+        Math.pow(end.pos_y - start.pos_y, 2) +
+        Math.pow(end.pos_z - start.pos_z, 2),
     )
     const steps = Math.max(1, Math.ceil(distance / maxStepSize))
 
@@ -140,13 +157,6 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
   }
 
   // waypoints is just an array of all the steps each drone needs to take.
-  // Now we want to have an array (size of nr of drones) of edited waypoints, all lenght (waypoints + delay * nr drones)
-  // We add for each drone, the waypoints (and prepend a static location or something)
-  // For each drone an offset of delay * index
-  // We can then access for a certain timestamp, for each drone the needed coordinates.
-  // So we need to extend the updates array to include each drone and their index and waypoint at that stepindex, in stead of the just one waypoint
-  // so maybe for each drone, updates += {index of drone, waypointsPerDrone[index of drone][stepIndex]} (or a more efficient way to code that)
-  // Extend waypoints with delays for each drone
 
   const delay = Math.floor(waypoints.length / numDrones) // Delays for each drone in timestamps, its nr of waypoints / nr of drones
 
@@ -158,11 +168,14 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
     const staticLocation = waitingPositions[i]
 
     // Prepend static location for delay
-    waypointsPerDrone[i] = Array(i * delay + 5)
-      .fill(staticLocation)
-      .concat(waypoints)
+    waypointsPerDrone[i] = Array(i * delay + 5).fill(staticLocation)
 
-    // Append waiting positions until max_length is reached (and then add one more)
+    // Repeat the path multiple times before returning to waiting position
+    for (let j = 0; j < repeatCount; j++) {
+      waypointsPerDrone[i] = waypointsPerDrone[i].concat(waypoints)
+    }
+
+    // Append waiting positions until max_length is reached
     while (waypointsPerDrone[i].length <= maxLength) {
       waypointsPerDrone[i].push(staticLocation)
     }
@@ -171,9 +184,16 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
   let stepIndex = 0
   const intervalId = setInterval(async () => {
     if (stepIndex >= waypointsPerDrone[0].length) {
-      clearInterval(intervalId)
-      console.log('All waypoints sent!')
-      return
+      if (countdown.value > 0) {
+        // Reset stepIndex to 0 to loop the path again
+        stepIndex = 0
+        console.log('Restarting path since timer is still running...')
+      } else {
+        // If the countdown has ended, stop the drones and exit
+        clearInterval(intervalId)
+        console.log('All waypoints sent and timer ended!')
+        return
+      }
     }
 
     const updates = waypointsPerDrone.map((waypoints, index) => ({
@@ -182,6 +202,7 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
     }))
 
     const dronesArray = createDroneArray(updates)
+    console.log('drones array = ', dronesArray)
 
     axios
       .post(droneEndpoint, dronesArray, { timeout: 2000 })
@@ -207,20 +228,20 @@ const sendShapePath = (path: { x: number; y: number; z: number }[]) => {
 
 const createWaitingPositions = (numDrones: number) => {
   const positions = []
-  let x = 1
-  let y = -1
+  let pos_x = 1
+  let pos_y = -1
   const yIncrement = 0.4
   const yMax = 1
   const xDecrement = 0.4
 
   // So it places at z = 0.5, and then at x = -1.5, with incrementing y positions. If it overflows, we increment x.
   for (let i = 0; i < numDrones; i++) {
-    positions.push({ x, y, z: 0.5 })
+    positions.push({ pos_x, pos_y, pos_z: 0.5 })
 
-    y += yIncrement
-    if (y > yMax) {
-      y = -1.5 // Reset y
-      x -= xDecrement // Move x closer
+    pos_y += yIncrement
+    if (pos_y > yMax) {
+      pos_y = -1.5 // Reset y
+      pos_x -= xDecrement // Move x closer
     }
   }
 
@@ -246,18 +267,6 @@ const loadNewGroup = () => {
   isCorrect.value = false
   message.value = ''
 
-  // Convert the selected shape's path to {x, y,z} format
-  const convertedPath = currentShapes[correctAnswerIndex.value].path.map(([x, y, z]) => ({
-    x,
-    y,
-    z,
-  }))
-
-  // Send shape path of the randomly chosen shape
-  if (!uiDebug) {
-    sendShapePath(convertedPath)
-  }
-
   // Reset votes
   votes.length = 0
   for (let i = 0; i < currentShapes.length; i++) {
@@ -267,6 +276,20 @@ const loadNewGroup = () => {
   // Reset counter
   countdown.value = countdown_value
   started.value = false
+
+  // Send waiting positions for the drones once
+  const waitingPositions = createWaitingPositions(numDrones)
+
+  if (!uiDebug) {
+    axios
+      .post(droneEndpoint, waitingPositions, { timeout: 2000 })
+      .then((response) => {
+        console.log('Waiting positions sent:', response)
+      })
+      .catch((error) => {
+        console.error('Error sending waiting positions:', error)
+      })
+  }
 }
 
 const vote = (index: number) => {

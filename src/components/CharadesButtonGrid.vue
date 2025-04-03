@@ -36,10 +36,6 @@ defineProps({
 
 // Define the event emitted
 defineEmits(['select'])
-
-// const getIconPath = (path: string) => {
-//   return new URL(`${path}`, import.meta.url).href
-// }
 </script>
 
 <style scoped>
