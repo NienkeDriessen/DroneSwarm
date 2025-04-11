@@ -39,7 +39,7 @@
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
         width: `${gridWidth}px`,
-        height: `${gridHeight}px`,
+        height: `${gridHeight}px`
       }"
     >
       <!-- Lines -->
@@ -102,9 +102,9 @@ enum Mode {
 const DRONES_API_URL = 'http://145.94.190.242:3000/api/drones'
 const POLLING_INTERVAL = 50
 
+// Drones data, fetched periodically via axios.
 const drones = ref<Drone[]>([])
 
-// Define the expected structure of the incoming drone data
 interface DroneData {
   bat_level: number
   pos_x: number
@@ -115,13 +115,11 @@ interface DroneData {
   vel_z: number
 }
 
-// Fetch drones data
 const fetchDronesData = () => {
   axios
     .get(DRONES_API_URL)
     .then((response) => {
       const dronesData: Record<string, DroneData> = response.data // Enforce type safety
-
       // Map drones_data structure to Drone instances
       drones.value = Object.entries(dronesData).map(
         ([id, data]) =>
@@ -152,8 +150,11 @@ onUnmounted(() => {
   }
 })
 
-const availableDronesCount = computed(() => drones.value.filter((drone) => drone.available).length)
+const availableDronesCount = computed(() =>
+  drones.value.filter((drone) => drone.available).length,
+)
 
+// Dimensions and grid calculation constants
 const rows = 14
 const cols = 18
 const maxGridWidth = 700
@@ -170,21 +171,18 @@ const cellSize = Math.min(
 const gridWidth = cellSize * cols + gap * (cols - 1)
 const gridHeight = cellSize * rows + gap * (rows - 1)
 
-// Initialize the grid array with inactive cells
+// Initialize the grid array with inactive cells (note: each cell is the same object reference)
 const grid = ref(Array(rows * cols).fill({ active: false }))
 
-// Track the selected path coordinates
+// State for drawn path and drone assignments.
 const pathCoordinates = ref<Coordinate[]>([])
-
-// Create array for the waypoint generator itself
 const waypoints = ref<Coordinate[]>([])
-
 const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([])
 
-const currentMode = ref<Mode>(Mode.PATH) // Default is draw
-const isDragging = ref(false) // Default to no dragging
+const currentMode = ref<Mode>(Mode.PATH) // Default mode: draw path
+const isDragging = ref(false) // Interaction flag for drag events
 
-const notificationMessage = ref<string | null>(null) // To store the notification message
+const notificationMessage = ref<string | null>(null) // For showing temporary messages
 
 /**
  * Displays a notification message for a set duration.
@@ -198,7 +196,7 @@ const showNotification = (message: string, duration = 5000) => {
   }, duration)
 }
 
-// Watch for mode changes and reset the grid
+// Watch for mode changes and reset the grid when the mode changes.
 watch(currentMode, (newMode, oldMode) => {
   if (newMode !== oldMode) {
     resetPath()
@@ -209,13 +207,14 @@ watch(currentMode, (newMode, oldMode) => {
 // }
 
 const lineSegments = computed(() => {
+  // Create consecutive segments from the drawn path.
   const segments = pathCoordinates.value.slice(1).map((end, index) => ({
     start: pathCoordinates.value[index],
     end: end,
     intersecting: false, // Default to false
   }))
 
-  // Check each segment for intersections with every other segment
+  // Check each segment for intersections with any previous segments.
   segments.forEach((segment, i) => {
     for (let j = 0; j < i; j++) {
       if (doLinesIntersect(segment.start, segment.end, segments[j].start, segments[j].end)) {
@@ -234,6 +233,7 @@ const getDroneId = (index: number) => {
   return drone ? drone.droneId : ''
 }
 
+// Mouse drag event handlers
 const startDrag = () => {
   if (currentMode.value === Mode.PATH) isDragging.value = true
 }
@@ -246,11 +246,9 @@ const handleDrag = (event: MouseEvent) => {
   if (!isDragging.value || currentMode.value !== Mode.PATH) return
   const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect()
   if (!rect) return
-
   const x = Math.floor((event.clientX - rect.left) / cellSize)
   const y = Math.floor((event.clientY - rect.top) / cellSize)
   const index = y * cols + x
-
   if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
     toggleCell(index)
   }
@@ -272,7 +270,6 @@ const handleTouch = (event: TouchEvent) => {
   const x = Math.floor((touch.clientX - rect.left) / cellSize)
   const y = Math.floor((touch.clientY - rect.top) / cellSize)
   const index = y * cols + x
-
   if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
     toggleCell(index)
   }
@@ -284,7 +281,6 @@ const endTouch = () => {
 
 const toggleCell = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) }
-
   if (currentMode.value === Mode.PATH) {
     if (!grid.value[index].active) {
       if (pathCoordinates.value.length < countdown_max) {
@@ -314,7 +310,6 @@ const toggleCell = (index: number) => {
   }
 }
 
-// Undo the last cell in the path
 const undo = () => {
   if (currentMode.value === Mode.PATH && pathCoordinates.value.length > 0) {
     const lastPoint = pathCoordinates.value.pop()!
@@ -327,7 +322,7 @@ const undo = () => {
     grid.value[index] = { active: false }
   }
 }
-// Reset the path and grid
+
 const resetPath = () => {
   pathCoordinates.value = []
   dronePoints.value = []
@@ -339,36 +334,28 @@ const resetPath = () => {
 const completePath = () => {
   if (currentMode.value === Mode.PATH) {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
-
     // Handle intersection by asking user to undo or start from scratch
     if (hasIntersections) {
       showNotification('Path contains intersecting lines. Please fix them before proceeding.')
       return
     }
-
     // Generate waypoints if no intersections
     waypoints.value = []
     for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
       const start = pathCoordinates.value[i]
       const end = pathCoordinates.value[i + 1]
-
       // Calculate distance between points
       const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2))
-      // Dynamically determine the number of steps
-      const steps = Math.max(1, Math.ceil(distance / maxStepSize)) // At least 1 step
-
-      // Add the starting point
+      // Dynamically determine the number of steps (at least 1)
+      const steps = Math.max(1, Math.ceil(distance / maxStepSize))
+      // Add the starting point and intermediate points
       waypoints.value.push(start)
-
-      // Add intermediate points
       waypoints.value.push(...generateIntermediatePoints(start, end, steps))
     }
-
     // Add the last point
     if (pathCoordinates.value.length > 0) {
       waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1])
     }
-
     console.log('Path completed with coordinates:', pathCoordinates.value)
     console.log('Path waypoints including intermediate points:', waypoints.value)
     sendPathCoordinates()
@@ -379,10 +366,8 @@ const completePath = () => {
       showNotification('You have assigned more points than the number of available drones!')
       return
     }
-
     // Clear existing assignments
     drones.value.forEach((drone) => drone.assignPoints([]))
-
     // Assign points to drones using Drone class method
     dronePoints.value.forEach((dronePoint) => {
       const drone = drones.value.find((d) => d.id === dronePoint.droneId)
@@ -390,7 +375,6 @@ const completePath = () => {
         drone.assignPoints([dronePoint.point])
       }
     })
-
     console.log('Drone assignments for points:', dronePoints.value)
     showNotification('Drone assignments for points have been made successfully!')
   } else {
@@ -398,8 +382,7 @@ const completePath = () => {
   }
 }
 
-//  ----- New function to map and send coordinates -----
-
+// ----- New function to map and send coordinates -----
 // These constants define the real-life space that your UI grid maps to.
 const REAL_ORIGIN = { y: 1.8, z: 0.0 } // Adjust origin as needed.
 const REAL_WIDTH = 3.9 // Total width in real-life units.
@@ -420,7 +403,7 @@ const sendPathCoordinates = async () => {
   const availableDrones = drones.value.filter((drone) => drone.available)
   const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
   const SENDING_INTERVAL = 200 // adjust sending rate (ms) as needed
-  const DRONE_OFFSET = 5       // offset in waypoint steps between following drones
+  const DRONE_OFFSET = 5 // offset in waypoint steps between following drones
   let index = 0
 
   const intervalId = setInterval(() => {
@@ -429,24 +412,19 @@ const sendPathCoordinates = async () => {
       clearInterval(intervalId)
       return
     }
-
     // For each drone, calculate an offset based on its position in availableDrones.
     const updates = availableDrones.map((drone, dIndex) => {
       const waypointIndex = index - dIndex * DRONE_OFFSET
       let waypoint: { x: number; y: number; z: number }
-
       if (waypointIndex < 0) {
         // Before starting, hold on at the first waypoint.
         waypoint = mappedWaypoints[0]
       } else if (waypointIndex >= mappedWaypoints.length) {
-        // After finishing the drawn path,
-        // assign a standby point on a line in the x direction.
+        // After finishing the drawn path, assign a standby point on a line in the x direction.
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX =
-            1.45 +
-            dIndex * ((-1.95 - 1.45) / (availableDrones.length - 1))
+          standbyX = 1.45 + dIndex * ((-1.95 - 1.45) / (availableDrones.length - 1))
         } else {
           standbyX = 1.45
         }
@@ -454,7 +432,6 @@ const sendPathCoordinates = async () => {
       } else {
         waypoint = mappedWaypoints[waypointIndex]
       }
-
       return {
         droneId: drone.id,
         pos_x: waypoint.x,
@@ -488,7 +465,6 @@ const sendPathCoordinates = async () => {
   }, SENDING_INTERVAL)
 }
 
-// Go back function to navigate to the previous page
 const router = useRouter()
 const goBack = () => {
   router.back()
