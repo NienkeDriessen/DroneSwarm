@@ -12,6 +12,7 @@
       :shapes="currentShapes"
       :selectedButton="selectedButton"
       :isCorrect="isCorrect"
+      :showCorrect="showCorrect"
       :clickCounts="votes"
       @select="vote"
     />
@@ -38,10 +39,11 @@ const currentShapes = reactive<Shape[]>([])
 const selectedButton = ref(-1)
 const correctAnswerIndex = ref(0)
 const isCorrect = ref(false)
+let showCorrect = false
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
-const uiDebug = false
+const uiDebug = true
 
 // Countdown timer
 const countdown = ref(0)
@@ -49,12 +51,62 @@ const countdown_value = 20 // Start countdown from 10
 // Store votes for each button
 const votes = reactive<number[]>([])
 const numDrones = 2 // We have to get this in stead of being hardcoded
-const repeatCount = 10 // Repeat the shape path 10 times
+const repeatCount = 5 // Repeat the shape path 10 times
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
-const droneEndpoint = 'http://145.94.63.16:3000/api/drones'
-
+const droneEndpoint = 'http://145.94.180.195:3000/api/drones'
 const started = ref(false) // Track if countdown has started
+
+// Intervals
+let timer: number | null = null
+let positionInterval: number | null = null
+
+const loadNewGroup = () => {
+  // Currently we loop through all the groups
+  // Loop to the start if at the end of groups
+  const group = groups[currentGroupIndex.value]
+  currentGroupIndex.value = (currentGroupIndex.value + 1) % groups.length
+
+  // Assuming there are always 4 options, choose a random index to be correct
+  correctAnswerIndex.value = Math.floor(Math.random() * 4)
+  currentShapes.splice(0)
+
+  group.forEach((shapeName: ShapeName) => {
+    currentShapes.push({ ...shapesData[shapeName], name: shapeName })
+  })
+
+  console.log('correct one is: ' + currentShapes[correctAnswerIndex.value].name)
+  selectedButton.value = -1
+  isCorrect.value = false
+  message.value = ''
+  showCorrect = false
+
+  // Reset votes
+  votes.length = 0
+  for (let i = 0; i < currentShapes.length; i++) {
+    votes.push(0)
+  }
+
+  // Reset counter
+  countdown.value = countdown_value
+  started.value = false
+
+  // Send waiting positions for the drones once
+  const waitingPositions = createWaitingPositions(numDrones)
+
+  if (!uiDebug) {
+    axios
+      .post(droneEndpoint, waitingPositions, { timeout: 2000 })
+      .then((response) => {
+        console.log('Waiting positions sent:', response)
+      })
+      .catch((error) => {
+        console.error('Error sending waiting positions:', error)
+      })
+  } else {
+    console.log('Debug, but otherwise axios post waiting positions!')
+  }
+}
 
 const startCountdown = () => {
   // Convert the selected shape's path to {x, y,z} format
@@ -67,17 +119,16 @@ const startCountdown = () => {
   )
 
   // Send shape path of the randomly chosen shape
-  if (!uiDebug) {
-    sendShapePath(convertedPath)
-  }
+  sendShapePath(convertedPath)
 
   started.value = true
   countdown.value = countdown_value
 
-  const timer = setInterval(() => {
+  timer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
-      clearInterval(timer)
+      if (timer) clearInterval(timer)
+      if (positionInterval) clearInterval(positionInterval) // Kill position sending
       evaluateResults()
     }
   }, 1000)
@@ -126,9 +177,9 @@ const createDroneArray = (
   return dronesArray
 }
 
-// Send 3D shape path to drones (for each drone it's position at the time index it is sent)
+// Send 3D shape path to drones in interval (for each drone it's position at the time index it is sent)
 const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) => {
-  const maxStepSize = 6
+  const maxStepSize = 0.5
   const waypoints: { pos_x: number; pos_y: number; pos_z: number }[] = []
 
   // Generate waypoints for each drone
@@ -137,6 +188,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
     () => [],
   )
 
+  // Create the waypoints array for the shape
   for (let i = 0; i < path.length - 1; i++) {
     const start = path[i]
     const end = path[i + 1]
@@ -152,18 +204,18 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
     waypoints.push(...generateIntermediatePoints(1, start, end, steps))
   }
 
-  if (path.length > 0) {
-    waypoints.push(path[path.length - 1])
-  }
-
-  // waypoints is just an array of all the steps each drone needs to take.
+  // if (path.length > 0) {
+  //   waypoints.push(path[path.length - 1])
+  // }
 
   const delay = Math.floor(waypoints.length / numDrones) // Delays for each drone in timestamps, its nr of waypoints / nr of drones
 
   // We need to create for each drone a waiting position. Maybe just
   const waitingPositions = createWaitingPositions(numDrones)
+
   const maxLength = waypoints.length + (numDrones - 1) * delay + 5
 
+  // Add waitingpositions before and after the shape until it reaches maxLength (to account for the shift)
   for (let i = 0; i < numDrones; i++) {
     const staticLocation = waitingPositions[i]
 
@@ -182,48 +234,38 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
   }
 
   let stepIndex = 0
-  const intervalId = setInterval(async () => {
-    if (stepIndex >= waypointsPerDrone[0].length) {
-      if (countdown.value > 0) {
-        // Reset stepIndex to 0 to loop the path again
-        stepIndex = 0
-        console.log('Restarting path since timer is still running...')
-      } else {
-        // If the countdown has ended, stop the drones and exit
-        clearInterval(intervalId)
-        console.log('All waypoints sent and timer ended!')
-        return
-      }
-    }
-
+  // Send in an interval the positions of all drones at that timestamp
+  positionInterval = setInterval(async () => {
     const updates = waypointsPerDrone.map((waypoints, index) => ({
       index,
-      coordinate: waypoints[stepIndex] || waypoints[waypoints.length - 1], // Repeat last position if out of range
+      coordinate: waypoints[stepIndex] || waypoints[waypoints.length - 1],
     }))
 
     const dronesArray = createDroneArray(updates)
-    console.log('drones array = ', dronesArray)
 
-    axios
-      .post(droneEndpoint, dronesArray, { timeout: 2000 })
-      .then((response) => {
-        console.log(response)
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log('SERVER ERROR')
-          console.log(error.response)
-        } else if (error.request) {
-          console.log('NETWORK ERROR: ' + error.message)
-          console.log(error.request)
-          console.log(error.toJSON())
-        } else {
-          console.log('ERROR', error.message)
-        }
-      })
-
+    if (!uiDebug) {
+      axios
+        .post(droneEndpoint, dronesArray, { timeout: 2000 })
+        .then((response) => {
+          console.log(response)
+        })
+        .catch((error) => {
+          if (error.response) {
+            console.log('SERVER ERROR')
+            console.log(error.response)
+          } else if (error.request) {
+            console.log('NETWORK ERROR: ' + error.message)
+            console.log(error.request)
+            console.log(error.toJSON())
+          } else {
+            console.log('ERROR', error.message)
+          }
+        })
+    } else {
+      console.log("Debug, 'sent' positions: " + dronesArray)
+    }
     stepIndex++
-  }, 1000)
+  }, 500)
 }
 
 const createWaitingPositions = (numDrones: number) => {
@@ -248,50 +290,6 @@ const createWaitingPositions = (numDrones: number) => {
   return positions
 }
 
-const loadNewGroup = () => {
-  // Loop to the start if at the end of groups
-  const group = groups[currentGroupIndex.value]
-  currentGroupIndex.value = (currentGroupIndex.value + 1) % groups.length
-
-  currentShapes.length = 0
-  group.forEach((shapeName: ShapeName) => {
-    currentShapes.push({ ...shapesData[shapeName], name: shapeName })
-  })
-
-  // Choose a random correct index
-  correctAnswerIndex.value = Math.floor(Math.random() * currentShapes.length)
-  // For testing purposes just do the first one
-  // correctAnswerIndex.value = 0
-  console.log('correct one is: ' + currentShapes[correctAnswerIndex.value].name)
-  selectedButton.value = -1
-  isCorrect.value = false
-  message.value = ''
-
-  // Reset votes
-  votes.length = 0
-  for (let i = 0; i < currentShapes.length; i++) {
-    votes.push(0)
-  }
-
-  // Reset counter
-  countdown.value = countdown_value
-  started.value = false
-
-  // Send waiting positions for the drones once
-  const waitingPositions = createWaitingPositions(numDrones)
-
-  if (!uiDebug) {
-    axios
-      .post(droneEndpoint, waitingPositions, { timeout: 2000 })
-      .then((response) => {
-        console.log('Waiting positions sent:', response)
-      })
-      .catch((error) => {
-        console.error('Error sending waiting positions:', error)
-      })
-  }
-}
-
 const vote = (index: number) => {
   votes[index]++
 }
@@ -313,6 +311,8 @@ const evaluateResults = () => {
         currentShapes[correctAnswerIndex.value].name +
         '. Nieuwe vorm wordt geladen...'
   }
+  showCorrect = true
+
   setTimeout(loadNewGroup, 2000)
 }
 

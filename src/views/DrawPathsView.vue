@@ -154,13 +154,13 @@ onUnmounted(() => {
 
 const availableDronesCount = computed(() => drones.value.filter((drone) => drone.available).length)
 
-const rows = 14
-const cols = 18
+const rows = 24
+const cols = 24
 const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2
-const maxStepSize = 0.5
-const countdown_max = 25
+const maxStepSize = 1
+const countdown_max = 125
 let countdown_value = countdown_max
 
 const cellSize = Math.min(
@@ -369,9 +369,11 @@ const completePath = () => {
       waypoints.value.push(pathCoordinates.value[pathCoordinates.value.length - 1])
     }
 
-    console.log('Path completed with coordinates:', pathCoordinates.value)
+    // console.log('Path completed with coordinates:', pathCoordinates.value)
+    const realCoordinates = pathCoordinates.value.map(mapGridToReal)
+    console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
-    sendPathCoordinates()
+    // sendPathCoordinates()
     showNotification('Path and waypoints are ready!')
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)

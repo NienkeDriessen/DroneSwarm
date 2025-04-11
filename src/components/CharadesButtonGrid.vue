@@ -31,6 +31,7 @@ defineProps({
   shapes: Array as () => Shape[],
   selectedButton: Number,
   isCorrect: Boolean,
+  showCorrect: Boolean,
   clickCounts: Array as () => number[],
 })
 
