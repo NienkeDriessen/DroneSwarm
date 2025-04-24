@@ -100,7 +100,7 @@
   background-color: #6f1d77; /* Foreground button color */
   border: 2px solid #6f1d77; /* Border color */
   font-size: 2rem;
-  padding-bottom: 10%;
+  padding-bottom: 5%;
   padding-right: 10%;
   width: 35vw;
   height: 20vh;

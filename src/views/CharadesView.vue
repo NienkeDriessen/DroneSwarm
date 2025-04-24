@@ -51,7 +51,7 @@ const uiDebug = true
 
 // Countdown timer
 const countdown = ref(0)
-const countdown_value = 5 // Start countdown from 10
+const countdown_value = 30 // Start countdown from x seconds
 // Store votes for each button
 const votes = reactive<number[]>([])
 const numDrones = 2 // We have to get this in stead of being hardcoded
@@ -64,6 +64,24 @@ const started = ref(false) // Track if countdown has started
 // Intervals
 let timer: number | null = null
 let positionInterval: number | null = null
+
+const originalBounds = {
+  min_x: -1.6,
+  max_x: 1.6,
+  min_y: -1.85,
+  max_y: 1.85,
+  min_z: 0.0,
+  max_z: 2.5,
+}
+//ABS_BOUNDS = ( (-1.45, 1.45), (-1.45, 1.45), (0.0, 2.1))
+const newBounds = {
+  min_x: -1.25,
+  max_x: 1.25,
+  min_y: -1.25,
+  max_y: 1.25,
+  min_z: 0.2,
+  max_z: 1.9,
+}
 
 const loadNewGroup = () => {
   // Currently we loop through all the groups
@@ -111,6 +129,37 @@ const loadNewGroup = () => {
   } else {
     console.log('Debug, but otherwise axios post waiting positions!')
   }
+}
+
+function rescale3DPathObjects(
+  path: { pos_x: number; pos_y: number; pos_z: number }[],
+  bounds: {
+    min_x: number
+    max_x: number
+    min_y: number
+    max_y: number
+    min_z: number
+    max_z: number
+  },
+  newBounds: {
+    min_x: number
+    max_x: number
+    min_y: number
+    max_y: number
+    min_z: number
+    max_z: number
+  },
+): { pos_x: number; pos_y: number; pos_z: number }[] {
+  const scale = (value: number, oldMin: number, oldMax: number, newMin: number, newMax: number) => {
+    if (oldMax === oldMin) return (newMax + newMin) / 2 // avoid divide by zero
+    return ((value - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin
+  }
+
+  return path.map(({ pos_x, pos_y, pos_z }) => ({
+    pos_x: scale(pos_x, bounds.min_x, bounds.max_x, newBounds.min_x, newBounds.max_x),
+    pos_y: scale(pos_y, bounds.min_y, bounds.max_y, newBounds.min_y, newBounds.max_y),
+    pos_z: scale(pos_z, bounds.min_z, bounds.max_z, newBounds.min_z, newBounds.max_z),
+  }))
 }
 
 const startCountdown = () => {
@@ -188,13 +237,6 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
   const maxStepSize = 0.5
   const waypoints: { pos_x: number; pos_y: number; pos_z: number }[] = []
 
-  // Generate waypoints for each drone
-  const waypointsPerDrone: { pos_x: number; pos_y: number; pos_z: number }[][] = Array.from(
-    { length: numDrones },
-    () => [],
-  )
-
-  // Create the waypoints array for the shape
   for (let i = 0; i < path.length - 1; i++) {
     const start = path[i]
     const end = path[i + 1]
@@ -210,17 +252,27 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
     waypoints.push(...generateIntermediatePoints(1, start, end, steps))
   }
 
+  const scaled_waypoints = rescale3DPathObjects(waypoints, originalBounds, newBounds)
+  if (uiDebug) {
+    console.log('scaled waypoints:')
+    console.log(scaled_waypoints)
+  }
+
   // if (path.length > 0) {
   //   waypoints.push(path[path.length - 1])
   // }
 
-  const delay = Math.floor(waypoints.length / numDrones) // Delays for each drone in timestamps, its nr of waypoints / nr of drones
+  const delay = Math.floor(scaled_waypoints.length / numDrones) // Delays for each drone in timestamps, its nr of waypoints / nr of drones
 
   // We need to create for each drone a waiting position. Maybe just
   const waitingPositions = createWaitingPositions(numDrones)
 
-  const maxLength = waypoints.length + (numDrones - 1) * delay + 5
-
+  const maxLength = scaled_waypoints.length + (numDrones - 1) * delay + 5
+  // Generate waypoints for each drone
+  const waypointsPerDrone: { pos_x: number; pos_y: number; pos_z: number }[][] = Array.from(
+    { length: numDrones },
+    () => [],
+  )
   // Add waitingpositions before and after the shape until it reaches maxLength (to account for the shift)
   for (let i = 0; i < numDrones; i++) {
     const staticLocation = waitingPositions[i]
@@ -230,7 +282,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
 
     // Repeat the path multiple times before returning to waiting position
     for (let j = 0; j < repeatCount; j++) {
-      waypointsPerDrone[i] = waypointsPerDrone[i].concat(waypoints)
+      waypointsPerDrone[i] = waypointsPerDrone[i].concat(scaled_waypoints)
     }
 
     // Append waiting positions until max_length is reached
