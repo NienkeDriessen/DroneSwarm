@@ -99,7 +99,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://145.94.190.242:3000/api/drones'
+const DRONES_API_URL = 'http://192.168.1.134:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
@@ -359,7 +359,7 @@ const completePath = () => {
     const realCoordinates = pathCoordinates.value.map(mapGridToReal)
     console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
-    // sendPathCoordinates()
+    sendPathCoordinates()
     showNotification('Path and waypoints are ready!')
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
