@@ -360,6 +360,7 @@ const completePath = () => {
     console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
     sendPathCoordinates()
+<<<<<<< HEAD
     showNotification('Path and waypoints are ready!')
 =======
     showNotification('Het pad wordt verzonden!')
