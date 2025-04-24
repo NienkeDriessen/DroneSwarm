@@ -51,7 +51,7 @@ const uiDebug = true
 
 // Countdown timer
 const countdown = ref(0)
-const countdown_value = 5 // Start countdown from 10
+const countdown_value = 30 // Start countdown from x seconds
 // Store votes for each button
 const votes = reactive<number[]>([])
 const numDrones = 2 // We have to get this in stead of being hardcoded
