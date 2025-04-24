@@ -14,6 +14,12 @@ npm install
 npm run dev
 ```
 
+### for running in the demo (for tablet)
+
+```sh
+npm run dev -- --host
+```
+
 ### For running the dummy backend:
 
 (new cmd)
