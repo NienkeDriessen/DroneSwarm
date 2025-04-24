@@ -360,11 +360,7 @@ const completePath = () => {
     console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
     sendPathCoordinates()
-<<<<<<< HEAD
-    showNotification('Path and waypoints are ready!')
-=======
     showNotification('Het pad wordt verzonden!')
->>>>>>> 2c2e5099014392fb4765b38d3539613e1e452b8a
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
