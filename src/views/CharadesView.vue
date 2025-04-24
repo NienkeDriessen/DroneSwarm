@@ -5,15 +5,17 @@
     <p class="sub-title">Stem op de vorm die je de drones ziet vliegen</p>
     <div class="countdown-timer">
       <button v-if="!started" @click="startCountdown" class="start-button">Start</button>
-      <span v-else>{{ countdown }}</span>
+      <span v-else-if="!showNextButton">{{ countdown }}</span>
+      <button v-if="showNextButton" @click="handleNextClick" class="start-button">Volgende</button>
     </div>
     <!-- Use the ShapeButtonGrid Component -->
     <ShapeButtonGrid
       :shapes="currentShapes"
       :selectedButton="selectedButton"
-      :isCorrect="isCorrect"
       :showCorrect="showCorrect"
       :clickCounts="votes"
+      :correctIndex="correctAnswerIndex"
+      :disable="disableVoteButtons"
       @select="vote"
     />
 
@@ -39,7 +41,9 @@ const currentShapes = reactive<Shape[]>([])
 const selectedButton = ref(-1)
 const correctAnswerIndex = ref(0)
 const isCorrect = ref(false)
+const showNextButton = ref(false)
 let showCorrect = false
+let disableVoteButtons = true
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
@@ -47,7 +51,7 @@ const uiDebug = true
 
 // Countdown timer
 const countdown = ref(0)
-const countdown_value = 20 // Start countdown from 10
+const countdown_value = 5 // Start countdown from 10
 // Store votes for each button
 const votes = reactive<number[]>([])
 const numDrones = 2 // We have to get this in stead of being hardcoded
@@ -80,6 +84,7 @@ const loadNewGroup = () => {
   isCorrect.value = false
   message.value = ''
   showCorrect = false
+  disableVoteButtons = true
 
   // Reset votes
   votes.length = 0
@@ -123,6 +128,7 @@ const startCountdown = () => {
 
   started.value = true
   countdown.value = countdown_value
+  disableVoteButtons = false
 
   timer = setInterval(() => {
     countdown.value--
@@ -291,7 +297,9 @@ const createWaitingPositions = (numDrones: number) => {
 }
 
 const vote = (index: number) => {
-  votes[index]++
+  if (!disableVoteButtons) {
+    votes[index]++
+  }
 }
 
 const evaluateResults = () => {
@@ -313,7 +321,12 @@ const evaluateResults = () => {
   }
   showCorrect = true
 
-  setTimeout(loadNewGroup, 2000)
+  showNextButton.value = true
+}
+
+const handleNextClick = () => {
+  showNextButton.value = false
+  loadNewGroup()
 }
 
 onMounted(() => loadNewGroup())
