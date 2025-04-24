@@ -159,7 +159,7 @@ const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2
 const maxStepSize = 1
-const countdown_max = 125
+const countdown_max = 30
 let countdown_value = countdown_max
 
 const cellSize = Math.min(
@@ -334,7 +334,7 @@ const completePath = () => {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
     // Handle intersection by asking user to undo or start from scratch
     if (hasIntersections) {
-      showNotification('Path contains intersecting lines. Please fix them before proceeding.')
+      showNotification('Het pad mag niet overlappen.')
       return
     }
     // Generate waypoints if no intersections
@@ -359,12 +359,12 @@ const completePath = () => {
     const realCoordinates = pathCoordinates.value.map(mapGridToReal)
     console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
-    // sendPathCoordinates()
-    showNotification('Path and waypoints are ready!')
+    sendPathCoordinates()
+    showNotification('Het pad wordt verzonden!')
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
-      showNotification('You have assigned more points than the number of available drones!')
+      showNotification('Je hebt meer punten geplaatst dan het maximale aantal drones!')
       return
     }
     // Clear existing assignments
@@ -377,7 +377,7 @@ const completePath = () => {
       }
     })
     console.log('Drone assignments for points:', dronePoints.value)
-    showNotification('Drone assignments for points have been made successfully!')
+    showNotification('Drone punt verdeling is successvol!')
   } else {
     showNotification('Invalid mode selected!')
   }
