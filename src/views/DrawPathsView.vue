@@ -384,9 +384,12 @@ const completePath = () => {
 
 // ----- New function to map and send coordinates -----
 // These constants define the real-life space that your UI grid maps to.
-const REAL_ORIGIN = { y: 1.8, z: 0.0 } // Adjust origin as needed.
-const REAL_WIDTH = 3.9 // Total width in real-life units.
-const REAL_HEIGHT = 2.5 // Total height in real-life units.
+// const REAL_ORIGIN = { y: 1.8, z: 0.0 } // Adjust origin as needed. Big
+const REAL_ORIGIN = { y: 1.25, z: 0.0 } // Adjust origin as needed. small
+// const REAL_WIDTH = 3.9 // Total width in real-life units. Big
+const REAL_WIDTH = 2.7 // Total width in real-life units. small
+// const REAL_HEIGHT = 2.5 // Total height in real-life units. Big
+const REAL_HEIGHT = 2.0 // Total height in real-life units. small
 const FIXED_X = 0.0 // Fixed third coordinate for 2D drawing.
 
 // Map a UI grid coordinate (with x,y) to real-life coordinates.
@@ -424,9 +427,9 @@ const sendPathCoordinates = async () => {
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX = 1.45 + dIndex * ((-1.95 - 1.45) / (availableDrones.length - 1))
+          standbyX = 1.25 + dIndex * ((-1.75 - 1.25) / (availableDrones.length - 1))
         } else {
-          standbyX = 1.45
+          standbyX = 1.25
         }
         waypoint = { x: standbyX, y: finalWaypoint.y, z: finalWaypoint.z }
       } else {
