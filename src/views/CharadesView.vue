@@ -20,22 +20,20 @@
     />
 
     <p class="sub-title" v-if="message">{{ message }}</p>
+    <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { groups, shapesData, type ShapeName } from '../assets/shapesData'
 import ShapeButtonGrid from '../components/CharadesButtonGrid.vue'
 import axios from 'axios'
-
-// Define the shape type explicitly
-type Shape = {
-  name: ShapeName
-  image: string
-  path: number[][]
-}
+import DroneStatus from '../components/DroneStatus.vue'
+import DroneRadar3 from '../components/DroneRadar3.vue'
+import Drone from '../models/Drone'
 
 const currentShapes = reactive<Shape[]>([])
 const selectedButton = ref(-1)
@@ -47,23 +45,91 @@ let disableVoteButtons = true
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
-const uiDebug = true
+const uiDebug = false
 
 // Countdown timer
 const countdown = ref(0)
 const countdown_value = 30 // Start countdown from x seconds
 // Store votes for each button
 const votes = reactive<number[]>([])
-const numDrones = 2 // We have to get this in stead of being hardcoded
+const numDrones = 5 // We have to get this in stead of being hardcoded
 const repeatCount = 5 // Repeat the shape path 10 times
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
-const droneEndpoint = 'http://145.94.180.195:3000/api/drones'
+// const droneEndpoint = 'http://145.94.184.155:3000/api/drones'
+const droneEndpoint = 'http://145.94.132.220:3000/api/drones'
 const started = ref(false) // Track if countdown has started
 
 // Intervals
 let timer: number | null = null
 let positionInterval: number | null = null
+
+const POLLING_INTERVAL = 50
+
+// Drones data, fetched periodically via axios.
+const drones = ref<Drone[]>([])
+interface DroneData {
+  bat_level: number
+  pos_x: number
+  pos_y: number
+  pos_z: number
+  vel_x: number
+  vel_y: number
+  vel_z: number
+}
+
+interface DroneDataSend {
+  drone_id: number
+  pos_x: number
+  pos_y: number
+  pos_z: number
+  vel_x: number
+  vel_y: number
+  vel_z: number
+}
+
+const fetchDronesData = () => {
+  axios
+    .get(droneEndpoint)
+    .then((response) => {
+      const dronesData: Record<string, DroneData> = response.data // Enforce type safety
+      // Map drones_data structure to Drone instances
+      drones.value = Object.entries(dronesData).map(
+        ([id, data]) =>
+          new Drone(
+            parseInt(id), // Drone ID
+            true, // Assume drones are available unless there's additional info
+            [], // Empty assignedPoints (or modify if necessary)
+            data.bat_level, // Battery Level
+            { x: data.pos_x, y: data.pos_y, z: data.pos_z }, // Position
+            { x: data.vel_x, y: data.vel_y, z: data.vel_z }, // Velocity
+          ),
+      )
+    })
+    .catch((error) => {
+      console.error('Error fetching drones data:', error)
+    })
+}
+
+let pollingIntervalId: number | null = null
+
+onMounted(() => {
+  fetchDronesData()
+  pollingIntervalId = window.setInterval(fetchDronesData, POLLING_INTERVAL)
+})
+
+onUnmounted(() => {
+  if (pollingIntervalId !== null) {
+    clearInterval(pollingIntervalId)
+  }
+})
+
+// Define the shape type explicitly
+type Shape = {
+  name: ShapeName
+  image: string
+  path: number[][]
+}
 
 const originalBounds = {
   min_x: -1.6,
@@ -234,7 +300,7 @@ const createDroneArray = (
 
 // Send 3D shape path to drones in interval (for each drone it's position at the time index it is sent)
 const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) => {
-  const maxStepSize = 0.5
+  const maxStepSize = 0.2
   const waypoints: { pos_x: number; pos_y: number; pos_z: number }[] = []
 
   for (let i = 0; i < path.length - 1; i++) {
@@ -301,9 +367,19 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
 
     const dronesArray = createDroneArray(updates)
 
+    const droneDataArray: DroneDataSend[] = dronesArray.map((drone, index) => ({
+      drone_id: index + 1,
+      pos_x: drone.pos_x,
+      pos_y: drone.pos_y,
+      pos_z: drone.pos_z,
+      vel_x: 0, // default velocity
+      vel_y: 0,
+      vel_z: 0,
+    }))
+
     if (!uiDebug) {
       axios
-        .post(droneEndpoint, dronesArray, { timeout: 2000 })
+        .post(droneEndpoint, droneDataArray, { timeout: 2000 })
         .then((response) => {
           console.log(response)
         })
@@ -320,10 +396,10 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
           }
         })
     } else {
-      console.log("Debug, 'sent' positions: " + dronesArray)
+      console.log("Debug, 'sent' positions: " + droneDataArray)
     }
     stepIndex++
-  }, 500)
+  }, 100)
 }
 
 const createWaitingPositions = (numDrones: number) => {

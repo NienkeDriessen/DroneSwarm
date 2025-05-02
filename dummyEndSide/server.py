@@ -87,7 +87,7 @@ def update_drones():
     with lock:
         # Iterate through the list of updates
         for update in data:
-            drone_id = update.get('droneId')
+            drone_id = update.get('drone_id')
             # Ensure the drone_id exists in our dataset.
             if drone_id in drones_data:
                 # Update only the allowed fields if present.
