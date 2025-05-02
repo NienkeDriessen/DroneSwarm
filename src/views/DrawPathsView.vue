@@ -99,7 +99,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://192.168.1.134:3000/api/drones'
+const DRONES_API_URL = 'http://145.94.184.155:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
@@ -158,7 +158,7 @@ const cols = 18
 const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2
-const maxStepSize = 1
+const maxStepSize = 0.3
 const countdown_max = 30
 let countdown_value = countdown_max
 
@@ -175,7 +175,7 @@ const grid = ref(Array(rows * cols).fill({ active: false }))
 // State for drawn path and drone assignments.
 const pathCoordinates = ref<Coordinate[]>([])
 const waypoints = ref<Coordinate[]>([])
-const dronePoints = ref<{ point: Coordinate; droneId: number }[]>([])
+const dronePoints = ref<{ point: Coordinate; drone_id: number }[]>([])
 
 const currentMode = ref<Mode>(Mode.PATH) // Default mode: draw path
 const isDragging = ref(false) // Interaction flag for drag events
@@ -228,7 +228,7 @@ const lineSegments = computed(() => {
 const getDroneId = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) }
   const drone = dronePoints.value.find((dp) => dp.point.x === point.x && dp.point.y === point.y)
-  return drone ? drone.droneId : ''
+  return drone ? drone.drone_id : ''
 }
 
 // Mouse drag event handlers
@@ -296,11 +296,11 @@ const toggleCell = (index: number) => {
       dronePoints.value.splice(droneIndex, 1)
     } else {
       const availableDrone = drones.value.find(
-        (drone) => drone.available && !dronePoints.value.some((dp) => dp.droneId === drone.id),
+        (drone) => drone.available && !dronePoints.value.some((dp) => dp.drone_id === drone.id),
       )
       if (availableDrone) {
         grid.value[index] = { active: true }
-        dronePoints.value.push({ point, droneId: availableDrone.id })
+        dronePoints.value.push({ point, drone_id: availableDrone.id })
       } else {
         alert('No available drones!')
       }
@@ -371,7 +371,7 @@ const completePath = () => {
     drones.value.forEach((drone) => drone.assignPoints([]))
     // Assign points to drones using Drone class method
     dronePoints.value.forEach((dronePoint) => {
-      const drone = drones.value.find((d) => d.id === dronePoint.droneId)
+      const drone = drones.value.find((d) => d.id === dronePoint.drone_id)
       if (drone && drone.available) {
         drone.assignPoints([dronePoint.point])
       }
@@ -385,12 +385,12 @@ const completePath = () => {
 
 // ----- New function to map and send coordinates -----
 // These constants define the real-life space that your UI grid maps to.
-// const REAL_ORIGIN = { y: 1.8, z: 0.0 } // Adjust origin as needed. Big
-const REAL_ORIGIN = { y: 1.25, z: 0.0 } // Adjust origin as needed. small
-// const REAL_WIDTH = 3.9 // Total width in real-life units. Big
-const REAL_WIDTH = 2.7 // Total width in real-life units. small
-// const REAL_HEIGHT = 2.5 // Total height in real-life units. Big
-const REAL_HEIGHT = 2.0 // Total height in real-life units. small
+const REAL_ORIGIN = { y: 1.8, z: 0.0 } // Adjust origin as needed. Big
+// const REAL_ORIGIN = { y: 1.25, z: 0.0 } // Adjust origin as needed. small
+const REAL_WIDTH = 3.9 // Total width in real-life units. Big
+// const REAL_WIDTH = 2.7 // Total width in real-life units. small
+const REAL_HEIGHT = 2.5 // Total height in real-life units. Big
+// const REAL_HEIGHT = 2.0 // Total height in real-life units. small
 const FIXED_X = 0.0 // Fixed third coordinate for 2D drawing.
 
 // Map a UI grid coordinate (with x,y) to real-life coordinates.
@@ -406,7 +406,7 @@ function mapGridToReal(coord: Coordinate) {
 const sendPathCoordinates = async () => {
   const availableDrones = drones.value.filter((drone) => drone.available)
   const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
-  const SENDING_INTERVAL = 200 // adjust sending rate (ms) as needed
+  const SENDING_INTERVAL = 100 // adjust sending rate (ms) as needed
   const DRONE_OFFSET = 5 // offset in waypoint steps between following drones
   let index = 0
 
@@ -428,7 +428,7 @@ const sendPathCoordinates = async () => {
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX = 1.25 + dIndex * ((-1.75 - 1.25) / (availableDrones.length - 1))
+          standbyX = 1.3 + dIndex * ((-3.2) / (availableDrones.length - 1))
         } else {
           standbyX = 1.25
         }
@@ -437,7 +437,7 @@ const sendPathCoordinates = async () => {
         waypoint = mappedWaypoints[waypointIndex]
       }
       return {
-        droneId: drone.id,
+        drone_id: drone.id,
         pos_x: waypoint.x,
         pos_y: waypoint.y,
         pos_z: waypoint.z,

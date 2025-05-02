@@ -25,32 +25,32 @@ drones_data = {
         "pos_x": -0.1, "pos_y": -0, "pos_z": 0.02,
         "vel_x": 0.0, "vel_y": 0.0, "vel_z": 0.0
     },
-    4: {
-        "bat_level": 87,
-        "pos_x": 0.3, "pos_y": -0.2, "pos_z": 0.05,
-        "vel_x": 0.0, "vel_y": 0.1, "vel_z": 0.0
-    },
-    5: {
-        "bat_level": 75,
-        "pos_x": 0.5, "pos_y": -0.5, "pos_z": 0.01,
-        "vel_x": 0.2, "vel_y": 0.0, "vel_z": 0.0
-    },
-    6: {
-        "bat_level": 50,
-        "pos_x": 0.1, "pos_y": -0.7, "pos_z": 0.0,
-        "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
-    },
+    # 4: {
+    #     "bat_level": 87,
+    #     "pos_x": 0.3, "pos_y": -0.2, "pos_z": 0.05,
+    #     "vel_x": 0.0, "vel_y": 0.1, "vel_z": 0.0
+    # },
+    # 5: {
+    #     "bat_level": 75,
+    #     "pos_x": 0.5, "pos_y": -0.5, "pos_z": 0.01,
+    #     "vel_x": 0.2, "vel_y": 0.0, "vel_z": 0.0
+    # },
+    # 6: {
+    #     "bat_level": 50,
+    #     "pos_x": 0.1, "pos_y": -0.7, "pos_z": 0.0,
+    #     "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
+    # },
 
-    7: {
-        "bat_level": 75,
-        "pos_x": 0.04, "pos_y": -0.6, "pos_z": 0.0,
-        "vel_x": 0.2, "vel_y": 0.0, "vel_z": 0.0
-    },
-    8: {
-        "bat_level": 50,
-        "pos_x": -0.05, "pos_y": -0.6, "pos_z": 0.0,
-        "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
-    },
+    # 7: {
+    #     "bat_level": 75,
+    #     "pos_x": 0.04, "pos_y": -0.6, "pos_z": 0.0,
+    #     "vel_x": 0.2, "vel_y": 0.0, "vel_z": 0.0
+    # },
+    # 8: {
+    #     "bat_level": 50,
+    #     "pos_x": -0.05, "pos_y": -0.6, "pos_z": 0.0,
+    #     "vel_x": -0.1, "vel_y": 0.0, "vel_z": 0.0
+    # },
 
 
 }
@@ -87,7 +87,7 @@ def update_drones():
     with lock:
         # Iterate through the list of updates
         for update in data:
-            drone_id = update.get('droneId')
+            drone_id = update.get('drone_id')
             # Ensure the drone_id exists in our dataset.
             if drone_id in drones_data:
                 # Update only the allowed fields if present.
@@ -108,7 +108,7 @@ def simulate_drone_removal():
 
 def simulate_drone_status_changes():
     global global_time
-    spiral_vy = 0.01   # Constant upward velocity in y-direction.
+    spiral_vy = 0.1   # Constant upward velocity in y-direction.
     delta = 0.01        # Time step in seconds.
     while True:
         time.sleep(delta)
