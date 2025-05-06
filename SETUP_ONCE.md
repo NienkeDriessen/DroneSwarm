@@ -34,9 +34,11 @@ You're done! You only need to do this setup once per machine.
 # If new laptop
 
 The IP address will be different,
-Connect to the router
+Connect the laptop to the router
 
-then you have to go into the router settings,
+### The app uses a static IP address so we need to set this up again
+
+you have to go into the router settings,
 
 (on browser navigate to (enter in address bar) 192.168.1.1)
 A login screen will be shown, the password is 'admin'
