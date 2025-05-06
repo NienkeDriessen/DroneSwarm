@@ -52,7 +52,7 @@ const countdown = ref(0)
 const countdown_value = 30 // Start countdown from x seconds
 // Store votes for each button
 const votes = reactive<number[]>([])
-const numDrones = 5 // We have to get this in stead of being hardcoded
+const numDrones = 3 // We have to get this in stead of being hardcoded
 const repeatCount = 5 // Repeat the shape path 10 times
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
@@ -183,9 +183,19 @@ const loadNewGroup = () => {
   // Send waiting positions for the drones once
   const waitingPositions = createWaitingPositions(numDrones)
 
+  const droneDataWaitingPositions: DroneDataSend[] = waitingPositions.map((drone, index) => ({
+    drone_id: index + 1,
+    pos_x: drone.pos_x,
+    pos_y: drone.pos_y,
+    pos_z: drone.pos_z,
+    vel_x: 0, // default velocity
+    vel_y: 0,
+    vel_z: 0,
+  }))
+
   if (!uiDebug) {
     axios
-      .post(droneEndpoint, waitingPositions, { timeout: 2000 })
+      .post(droneEndpoint, droneDataWaitingPositions, { timeout: 2000 })
       .then((response) => {
         console.log('Waiting positions sent:', response)
       })
