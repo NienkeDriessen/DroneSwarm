@@ -30,3 +30,24 @@ pip install -r requirements.txt
 ```
 
 You're done! You only need to do this setup once per machine.
+
+# If new laptop
+
+The IP address will be different,
+Connect to the router
+
+then you have to go into the router settings,
+
+(on browser navigate to (enter in address bar) 192.168.1.1)
+A login screen will be shown, the password is 'admin'
+Then click on the configuration tab
+Click on connectivity menu, under local network,
+Click on DHCP reservation button
+
+While your device is connected to the router, you can see the device, select it and add client.
+
+THen in 'Clients already reserved'
+You can assign an IP address, change it to
+
+192.168.1.145 (TODO CHECK)
+And remove the old one that was assigned
