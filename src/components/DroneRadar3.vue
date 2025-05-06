@@ -175,10 +175,10 @@ onMounted(() => {
     sceneGroup.add(arrowsGroup)
     updateArrows()
 
-    // const domainMin = new THREE.Vector3(-1.95, -1.7, 0);
-    // const domainMax = new THREE.Vector3(1.45, 1.8, 2.5);
-    const domainMin = new THREE.Vector3(-1.45, -1.45, 0)
-    const domainMax = new THREE.Vector3(1.45, 1.45, 2.1)
+    const domainMin = new THREE.Vector3(-1.95, -1.7, 0)
+    const domainMax = new THREE.Vector3(1.45, 1.8, 2.5)
+    // const domainMin = new THREE.Vector3(-1.45, -1.45, 0);
+    // const domainMax = new THREE.Vector3(1.45, 1.45, 2.1);
     const box = new THREE.Box3(domainMin, domainMax)
     fixedBoxHelper = new THREE.Box3Helper(box, 0xff0000)
     sceneGroup.add(fixedBoxHelper)
@@ -200,8 +200,8 @@ onMounted(() => {
       label.position.add(new THREE.Vector3(0.1, 0.1, 0.1))
       sceneGroup.add(label)
     })
-
-    const gridSize = 2.9,
+    //3.4 for big cage, 2.9 for small
+    const gridSize = 3.4,
       divisions = 15,
       color = 0xff0000,
       gridOpacity = 0.3
