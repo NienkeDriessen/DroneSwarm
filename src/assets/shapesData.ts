@@ -14,19 +14,19 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
     image: startPath + '/Lijn.svg',
     path: [
       [0, 0, 1.5],
-      [0, -1, 1.5],
+      [0, -1.35, 1.5],
       [0, 0, 1.5],
-      [0, 1, 1.5],
+      [0, 1.35, 1.5],
       [0, 0, 1.5],
     ],
   },
   Driehoek: {
     image: startPath + '/Driehoek.svg',
     path: [
-      [0, 1, 0.3],
+      [0, 1.35, 0.3],
       [0, 0, 1.9],
-      [0, -1, 0.3],
-      [0, 1, 0.3],
+      [0, -1.35, 0.3],
+      [0, 1.35, 0.3],
     ],
   },
   Cirkel: {
@@ -52,10 +52,10 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
   Vierkant: {
     image: startPath + '/Vierkant.svg',
     path: [
-      [0, -0.85, 1.875],
-      [0, -0.85, 0.625],
-      [1, 0.85, 0.625],
-      [1, 0.85, 1.875],
+      [0, -1.2, 1.825],
+      [0, -1.2, 0.625],
+      [0, 1.2, 0.625],
+      [0, 1.2, 1.825],
     ],
   },
   Hart: {

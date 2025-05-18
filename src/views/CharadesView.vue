@@ -52,12 +52,12 @@ const countdown = ref(0)
 const countdown_value = 30 // Start countdown from x seconds
 // Store votes for each button
 const votes = reactive<number[]>([])
-const numDrones = 3 // We have to get this in stead of being hardcoded
+const numDrones = 1 // We have to get this in stead of being hardcoded
 const repeatCount = 5 // Repeat the shape path 10 times
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 // const droneEndpoint = 'http://145.94.184.155:3000/api/drones'
-const droneEndpoint = 'http://145.94.132.220:3000/api/drones'
+const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 const started = ref(false) // Track if countdown has started
 
 // Intervals
@@ -140,13 +140,22 @@ const originalBounds = {
   max_z: 2.5,
 }
 //ABS_BOUNDS = ( (-1.45, 1.45), (-1.45, 1.45), (0.0, 2.1))
+// const newBounds = {
+//   min_x: -1.25,
+//   max_x: 1.25,
+//   min_y: -1.25,
+//   max_y: 1.25,
+//   min_z: 0.2,
+//   max_z: 1.9,
+// }
+
 const newBounds = {
-  min_x: -1.25,
-  max_x: 1.25,
-  min_y: -1.25,
-  max_y: 1.25,
-  min_z: 0.2,
-  max_z: 1.9,
+  min_x: -1.6,
+  max_x: 1.6,
+  min_y: -1.85,
+  max_y: 1.85,
+  min_z: 0.0,
+  max_z: 2.5,
 }
 
 const loadNewGroup = () => {
@@ -310,7 +319,7 @@ const createDroneArray = (
 
 // Send 3D shape path to drones in interval (for each drone it's position at the time index it is sent)
 const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) => {
-  const maxStepSize = 0.2
+  const maxStepSize = 0.1
   const waypoints: { pos_x: number; pos_y: number; pos_z: number }[] = []
 
   for (let i = 0; i < path.length - 1; i++) {

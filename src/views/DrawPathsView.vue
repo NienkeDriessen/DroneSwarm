@@ -99,7 +99,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://145.94.184.155:3000/api/drones'
+const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
@@ -385,11 +385,11 @@ const completePath = () => {
 
 // ----- New function to map and send coordinates -----
 // These constants define the real-life space that your UI grid maps to.
-const REAL_ORIGIN = { y: 1.8, z: 0.0 } // Adjust origin as needed. Big
+const REAL_ORIGIN = { y: 1.35, z: 0.15 } // Adjust origin as needed. Big
 // const REAL_ORIGIN = { y: 1.25, z: 0.0 } // Adjust origin as needed. small
-const REAL_WIDTH = 3.9 // Total width in real-life units. Big
+const REAL_WIDTH = 2.7 // Total width in real-life units. Big
 // const REAL_WIDTH = 2.7 // Total width in real-life units. small
-const REAL_HEIGHT = 2.5 // Total height in real-life units. Big
+const REAL_HEIGHT = 2.35 // Total height in real-life units. Big
 // const REAL_HEIGHT = 2.0 // Total height in real-life units. small
 const FIXED_X = 0.0 // Fixed third coordinate for 2D drawing.
 
@@ -407,7 +407,7 @@ const sendPathCoordinates = async () => {
   const availableDrones = drones.value.filter((drone) => drone.available)
   const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
   const SENDING_INTERVAL = 100 // adjust sending rate (ms) as needed
-  const DRONE_OFFSET = 5 // offset in waypoint steps between following drones
+  const DRONE_OFFSET = 15// offset in waypoint steps between following drones
   let index = 0
 
   const intervalId = setInterval(() => {
@@ -428,9 +428,9 @@ const sendPathCoordinates = async () => {
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX = 1.3 + dIndex * ((-3.2) / (availableDrones.length - 1))
+          standbyX = 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
         } else {
-          standbyX = 1.25
+          standbyX = 1.2
         }
         waypoint = { x: standbyX, y: finalWaypoint.y, z: finalWaypoint.z }
       } else {
