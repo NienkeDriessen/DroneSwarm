@@ -31,10 +31,10 @@
       @mouseup="endDrag"
       @mouseleave="endDrag"
       @mousemove="handleDrag"
-      @touchstart.prevent="startTouch"
+      @touchstart.prevent="startDrag"
       @touchmove.prevent="handleTouch"
-      @touchend.prevent="endTouch"
-      @touchcancel.prevent="endTouch"
+      @touchend.prevent="endDrag"
+      @touchcancel.prevent="endDrag"
       :style="{
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
@@ -244,37 +244,38 @@ const handleDrag = (event: MouseEvent) => {
   if (!isDragging.value || currentMode.value !== Mode.PATH) return
   const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect()
   if (!rect) return
-  const x = Math.floor((event.clientX - rect.left) / cellSize)
-  const y = Math.floor((event.clientY - rect.top) / cellSize)
+
+  // ← replace dividing by cellSize with (cellSize + gap)
+  const xGrid = Math.floor((event.clientX - rect.left) / (cellSize + gap))
+  const yGrid = Math.floor((event.clientY - rect.top)  / (cellSize + gap))
+  // clamp into the grid
+  const x = Math.min(Math.max(xGrid, 0), cols - 1)
+  const y = Math.min(Math.max(yGrid, 0), rows - 1)
   const index = y * cols + x
-  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
+
+  if (!grid.value[index].active) {
     toggleCell(index)
   }
 }
 
-// New functions for touch event support
-const startTouch = () => {
-  if (currentMode.value === Mode.PATH) {
-    isDragging.value = true
-  }
-}
-
+// Touch event support
 const handleTouch = (event: TouchEvent) => {
   if (!isDragging.value || currentMode.value !== Mode.PATH) return
   const touch = event.touches[0]
   const gridContainer = (event.target as HTMLElement).closest('.grid-container')
   if (!gridContainer) return
   const rect = gridContainer.getBoundingClientRect()
-  const x = Math.floor((touch.clientX - rect.left) / cellSize)
-  const y = Math.floor((touch.clientY - rect.top) / cellSize)
+
+  // ← same fix here
+  const xGrid = Math.floor((touch.clientX - rect.left) / (cellSize + gap))
+  const yGrid = Math.floor((touch.clientY - rect.top)  / (cellSize + gap))
+  const x = Math.min(Math.max(xGrid, 0), cols - 1)
+  const y = Math.min(Math.max(yGrid, 0), rows - 1)
   const index = y * cols + x
-  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
+
+  if (!grid.value[index].active) {
     toggleCell(index)
   }
-}
-
-const endTouch = () => {
-  isDragging.value = false
 }
 
 const toggleCell = (index: number) => {
@@ -543,6 +544,7 @@ const goBack = () => {
   border: 2px solid #ccacc9;
   cursor: pointer;
   transition: background-color 0.3s;
+  box-sizing: border-box;
 }
 
 .grid-cell.active {
