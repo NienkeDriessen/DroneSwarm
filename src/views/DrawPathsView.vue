@@ -99,7 +99,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
+const DRONES_API_URL = 'http://145.94.179.2:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
@@ -413,68 +413,84 @@ function mapGridToReal(coord: Coordinate) {
 
 // Replace the existing sendPathCoordinates function with this version:
 const sendPathCoordinates = async () => {
-  const availableDrones = drones.value.filter((drone) => drone.available)
-  const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
-  const SENDING_INTERVAL = 100 // adjust sending rate (ms) as needed
-  const DRONE_OFFSET = 15// offset in waypoint steps between following drones
-  let index = 0
+  const availableDrones = drones.value.filter(d => d.available)
+  const baseWaypoints  = waypoints.value.map(mapGridToReal)
+  const SENDING_INTERVAL = 100    // ms between ticks
+  const DRONE_OFFSET     = 8      // tick lag per drone
+  let tick = 0
 
-  const intervalId = setInterval(() => {
-    // Ensure we run a few extra iterations so trailing drones can reach the end
-    if (index >= mappedWaypoints.length + (availableDrones.length - 1) * DRONE_OFFSET) {
-      clearInterval(intervalId)
+  const handle = window.setInterval(() => {
+    // total ticks: 1 hover + prefix + baseWaypoints + 1 standby + offsets
+    const totalLength =
+      // we’ll compute prefix per‐drone below, so just overestimate:
+      1 +
+      Math.ceil( Math.hypot(
+        baseWaypoints[0].x - 0,
+        baseWaypoints[0].y - 0,
+        baseWaypoints[0].z - 0
+      ) / maxStepSize ) +
+      baseWaypoints.length +
+      1 +
+      (availableDrones.length - 1) * DRONE_OFFSET
+
+    if (tick >= totalLength) {
+      clearInterval(handle)
       return
     }
-    // For each drone, calculate an offset based on its position in availableDrones.
+
     const updates = availableDrones.map((drone, dIndex) => {
-      const waypointIndex = index - dIndex * DRONE_OFFSET
-      let waypoint: { x: number; y: number; z: number }
-      if (waypointIndex < 0) {
-        // Before starting, hold on at the first waypoint.
-        waypoint = mappedWaypoints[0]
-      } else if (waypointIndex >= mappedWaypoints.length) {
-        // After finishing the drawn path, assign a standby point on a line in the x direction.
-        const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
-        let standbyX: number
-        if (availableDrones.length > 1) {
-          standbyX = 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
-        } else {
-          standbyX = 1.2
-        }
-        waypoint = { x: standbyX, y: finalWaypoint.y, z: finalWaypoint.z }
-      } else {
-        waypoint = mappedWaypoints[waypointIndex]
+      // 1) hover at current real position
+      const currReal = {
+        x: drone.position.x,
+        y: drone.position.y,
+        z: drone.position.z
       }
+
+      // 2) build a little prefix from currReal → first path waypoint
+      const firstReal = baseWaypoints[0]
+      const dx = firstReal.x - currReal.x
+      const dy = firstReal.y - currReal.y
+      const dz = firstReal.z - currReal.z
+      const dist = Math.hypot(dx, dy, dz)
+      const prefixSteps = Math.max(1, Math.ceil(dist / maxStepSize))
+      const prefixPoints = Array.from({ length: prefixSteps }, (_, i) => ({
+        x: currReal.x + dx * ((i + 1) / prefixSteps),
+        y: currReal.y + dy * ((i + 1) / prefixSteps),
+        z: currReal.z + dz * ((i + 1) / prefixSteps),
+      }))
+
+      // 3) compute standby‐line X
+      const last = baseWaypoints[baseWaypoints.length - 1]
+      const standbyX = availableDrones.length > 1
+        ? 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
+        : 1.2
+
+      // 4) full per‐drone waypoint list
+      const wpList = [
+        currReal,
+        ...prefixPoints,
+        ...baseWaypoints,
+        { x: standbyX, y: last.y, z: last.z },
+      ]
+
+      // 5) pick this drone’s current tick (with offset)
+      const localIdx = tick - dIndex * DRONE_OFFSET
+      const idx = Math.min(Math.max(localIdx, 0), wpList.length - 1)
+      const wp = wpList[idx]
+
       return {
         drone_id: drone.id,
-        pos_x: waypoint.x,
-        pos_y: waypoint.y,
-        pos_z: waypoint.z,
-        vel_x: 0.0,
-        vel_y: 0.0,
-        vel_z: 0.0,
+        pos_x: wp.x,
+        pos_y: wp.y,
+        pos_z: wp.z,
+        vel_x: 0,
+        vel_y: 0,
+        vel_z: 0,
       }
     })
 
-    axios
-      .post(DRONES_API_URL, updates, { timeout: 2000 })
-      .then((response) => {
-        console.log(response)
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log('SERVER ERROR')
-          console.log(error.response)
-        } else if (error.request) {
-          console.log('NETWORK ERROR: ' + error.message)
-          console.log(error.request)
-          console.log(error.toJSON())
-        } else {
-          console.log('ERROR', error.message)
-        }
-      })
-
-    index++
+    axios.post(DRONES_API_URL, updates).catch(console.error)
+    tick++
   }, SENDING_INTERVAL)
 }
 
