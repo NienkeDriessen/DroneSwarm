@@ -281,12 +281,20 @@ const handleTouch = (event: TouchEvent) => {
 const toggleCell = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) }
   if (currentMode.value === Mode.PATH) {
-    if (!grid.value[index].active) {
-      if (pathCoordinates.value.length < countdown_max) {
-        grid.value[index] = { active: true }
-        pathCoordinates.value.push(point)
-        countdown_value = countdown_max - pathCoordinates.value.length
-      }
+    const existingIdx = pathCoordinates.value.findIndex(
+      (p) => p.x === point.x && p.y === point.y
+    )
+    if (existingIdx >= 0) {
+      // remove just that point
+      pathCoordinates.value.splice(existingIdx, 1)
+      grid.value[index] = { active: false }
+      countdown_value = countdown_max - pathCoordinates.value.length
+    }
+    else if (pathCoordinates.value.length < countdown_max) {
+      // normal add‐point
+      grid.value[index] = { active: true }
+      pathCoordinates.value.push(point)
+      countdown_value = countdown_max - pathCoordinates.value.length
     }
   } else if (currentMode.value === Mode.POINTS) {
     const droneIndex = dronePoints.value.findIndex(
