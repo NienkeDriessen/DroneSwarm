@@ -440,13 +440,15 @@ const sendPathCoordinates = async () => {
 
     const updates = availableDrones.map((drone, dIndex) => {
       // 1) hover at current real position
+
+      //easily note current positions of drones
       const currReal = {
         x: drone.position.x,
         y: drone.position.y,
         z: drone.position.z
       }
 
-      // 2) build a little prefix from currReal → first path waypoint
+      // 2) build a prepend from currReal → first path waypoint
       const firstReal = baseWaypoints[0]
       const dx = firstReal.x - currReal.x
       const dy = firstReal.y - currReal.y
@@ -460,6 +462,8 @@ const sendPathCoordinates = async () => {
       }))
 
       // 3) compute standby‐line X
+      // hard-coded numbers are cause of margin from actual cage size
+      // TODO: parametrise margins
       const last = baseWaypoints[baseWaypoints.length - 1]
       const standbyX = availableDrones.length > 1
         ? 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
@@ -467,7 +471,7 @@ const sendPathCoordinates = async () => {
 
       // 4) full per‐drone waypoint list
       const wpList = [
-        currReal,
+        currReal, // start pos
         ...prefixPoints,
         ...baseWaypoints,
         { x: standbyX, y: last.y, z: last.z },
@@ -478,11 +482,15 @@ const sendPathCoordinates = async () => {
       const idx = Math.min(Math.max(localIdx, 0), wpList.length - 1)
       const wp = wpList[idx]
 
+      // out packet is of same format as being sent
       return {
+        // drone id jic
         drone_id: drone.id,
+        //positions are what's important
         pos_x: wp.x,
         pos_y: wp.y,
         pos_z: wp.z,
+        // We don't send velocities so let's keep em zero'ed
         vel_x: 0,
         vel_y: 0,
         vel_z: 0,
