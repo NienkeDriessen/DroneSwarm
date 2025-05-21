@@ -25,45 +25,62 @@
       </div> -->
     </div>
     <!-- Grid container with overlay for lines -->
-    <div
-      class="grid-container"
-      @mousedown="startDrag"
-      @mouseup="endDrag"
-      @mouseleave="endDrag"
-      @mousemove="handleDrag"
-      @touchstart.prevent="startTouch"
-      @touchmove.prevent="handleTouch"
-      @touchend.prevent="endTouch"
-      @touchcancel.prevent="endTouch"
-      :style="{
-        gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
-        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
-        width: `${gridWidth}px`,
-        height: `${gridHeight}px`,
-      }"
-    >
-      <!-- Lines -->
-      <svg class="line-overlay" :width="gridWidth" :height="gridHeight">
-        <line
-          v-for="(segment, index) in lineSegments"
-          :key="index"
-          :x1="segment.start.x * (cellSize + gap) + cellSize / 2"
-          :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
-          :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
-          :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-          :stroke="segment.intersecting ? '#DB1F22' : '#6f1d77'"
-          stroke-width="8"
-        />
-      </svg>
-      <!-- Grid cells -->
+    <div class="grid-and-klaar-row">
+      <!-- Grid -->
       <div
-        v-for="(cell, index) in grid"
-        :key="index"
-        :class="['grid-cell', cell.active ? 'active' : '']"
-        :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
-        @click="toggleCell(index)"
-        :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
-      ></div>
+        class="grid-container"
+        @mousedown="startDrag"
+        @mouseup="endDrag"
+        @mouseleave="endDrag"
+        @mousemove="handleDrag"
+        @touchstart.prevent="startTouch"
+        @touchmove.prevent="handleTouch"
+        @touchend.prevent="endTouch"
+        @touchcancel.prevent="endTouch"
+        :style="{
+          gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
+          gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+          width: `${gridWidth}px`,
+          height: `${gridHeight}px`,
+        }"
+      >
+        <!-- Lines -->
+        <svg class="line-overlay" :width="gridWidth" :height="gridHeight">
+          <line
+            v-for="(segment, index) in lineSegments"
+            :key="index"
+            :x1="segment.start.x * (cellSize + gap) + cellSize / 2"
+            :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
+            :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
+            :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
+            :stroke="segment.intersecting ? '#DB1F22' : '#6f1d77'"
+            stroke-width="8"
+          />
+        </svg>
+        <!-- Grid cells -->
+        <div
+          v-for="(cell, index) in grid"
+          :key="index"
+          :class="['grid-cell', cell.active ? 'active' : '']"
+          :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
+          @click="toggleCell(index)"
+          :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
+        ></div>
+      </div>
+
+      <!-- Klaar Button -->
+      <div class="complete-button-container">
+        <img src="@/assets/Group 24.svg" alt="Front view of drone cage" class="view-hint" />
+        <button
+          id="complete-button"
+          @click="completePath"
+          class="control-button"
+          :disabled="isSendingPath"
+          :class="{ 'disabled-button': isSendingPath }"
+        >
+          Klaar!
+        </button>
+      </div>
     </div>
     <div v-if="notificationMessage" class="notification">
       {{ notificationMessage }}
@@ -73,11 +90,10 @@
       <div class="button-container">
         <button id="undo-button" @click="undo" class="control-button">Ongedaan maken</button>
         <button id="reset-button" @click="resetPath" class="control-button">Reset</button>
-        <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
-    <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" />
+    <!-- <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" /> -->
   </div>
 </template>
 
@@ -90,8 +106,8 @@ import {
   generateIntermediatePoints,
   type Coordinate,
 } from '../assets/GeometryTools'
-import DroneStatus from '../components/DroneStatus.vue'
-import DroneRadar3 from '../components/DroneRadar3.vue'
+// import DroneStatus from '../components/DroneStatus.vue'
+// import DroneRadar3 from '../components/DroneRadar3.vue'
 import Drone from '../models/Drone'
 
 enum Mode {
@@ -179,6 +195,7 @@ const dronePoints = ref<{ point: Coordinate; drone_id: number }[]>([])
 
 const currentMode = ref<Mode>(Mode.PATH) // Default mode: draw path
 const isDragging = ref(false) // Interaction flag for drag events
+const isSendingPath = ref(false)
 
 const notificationMessage = ref<string | null>(null) // For showing temporary messages
 
@@ -329,7 +346,8 @@ const resetPath = () => {
   countdown_value = countdown_max - pathCoordinates.value.length
 }
 
-const completePath = () => {
+const completePath = async () => {
+  if (isSendingPath.value) return
   if (currentMode.value === Mode.PATH) {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
     // Handle intersection by asking user to undo or start from scratch
@@ -337,6 +355,7 @@ const completePath = () => {
       showNotification('Het pad mag niet overlappen.')
       return
     }
+    isSendingPath.value = true
     // Generate waypoints if no intersections
     waypoints.value = []
     for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
@@ -359,8 +378,9 @@ const completePath = () => {
     const realCoordinates = pathCoordinates.value.map(mapGridToReal)
     console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
-    sendPathCoordinates()
-    showNotification('Het pad wordt verzonden!')
+    await sendPathCoordinates() // Assuming this returns a Promise
+
+    showNotification('Pad succesvol verzonden!')
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
@@ -407,13 +427,14 @@ const sendPathCoordinates = async () => {
   const availableDrones = drones.value.filter((drone) => drone.available)
   const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
   const SENDING_INTERVAL = 100 // adjust sending rate (ms) as needed
-  const DRONE_OFFSET = 15// offset in waypoint steps between following drones
+  const DRONE_OFFSET = 15 // offset in waypoint steps between following drones
   let index = 0
 
   const intervalId = setInterval(() => {
     // Ensure we run a few extra iterations so trailing drones can reach the end
     if (index >= mappedWaypoints.length + (availableDrones.length - 1) * DRONE_OFFSET) {
       clearInterval(intervalId)
+      isSendingPath.value = false
       return
     }
     // For each drone, calculate an offset based on its position in availableDrones.
@@ -428,7 +449,7 @@ const sendPathCoordinates = async () => {
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX = 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
+          standbyX = 1.3 + dIndex * (-3.2 / (availableDrones.length - 1))
         } else {
           standbyX = 1.2
         }
@@ -513,7 +534,7 @@ const goBack = () => {
 .sub-title {
   color: #6f1d77;
   font-weight: 500;
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-family: 'Arial Narrow', Arial, sans-serif;
   margin-top: 2vh;
 }
@@ -598,7 +619,7 @@ const goBack = () => {
   padding: 1rem 2rem;
   left: 3vw;
   top: 4vh;
-  font-size: 1rem;
+  font-size: 1.7rem;
   cursor: pointer;
   background-color: #6f1d77;
   color: #f7ecd8;
@@ -613,10 +634,35 @@ const goBack = () => {
   font-size: 1.7rem;
 }
 
+.grid-and-klaar-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-left: 20%;
+}
+
+.complete-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
 #complete-button {
-  background-color: #6f1d77;
-  color: #f7ecd8;
-  font-size: 1.7rem;
+  background-color: #41be96; /* Green background */
+  color: white;
+  font-size: 2rem;
+  padding: 3rem 3rem;
+  border-radius: 10px 0px 10px 0px;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
+  min-width: 150px;
+}
+
+#complete-button::after {
+  background-color: #b6b6b6;
 }
 
 #reset-button {
@@ -666,5 +712,14 @@ const goBack = () => {
 }
 #points-mode-button {
   border-radius: 0 0 5px 5px;
+}
+
+.view-hint {
+  max-width: 15vw;
+  margin-bottom: 1rem;
+}
+.disabled-button {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>

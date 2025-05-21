@@ -13,6 +13,9 @@ git clone https://github.com/NienkeDriessen/DroneSwarm.git
 cd DroneSwarm
 ```
 
+Sudo apt install npm
+npm install
+
 ## 2. Install Python Requirements
 
 Ensure Python 3.10+ is installed. Then, create a virtual environment (optional but recommended):

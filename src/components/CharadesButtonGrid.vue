@@ -5,7 +5,11 @@
       :key="index"
       @click="$emit('select', index)"
       :disabled="disableVoteButtons"
-      :class="['shape-button', { correct: showCorrect && index === correctIndex }]"
+      :class="[
+        'shape-button',
+        { correct: showCorrect && index === correctIndex },
+        { notStarted: notStarted },
+      ]"
     >
       {{ shape.name }}
       <img :src="shape.image" alt="Button icon" class="button_icon" id="icon" />
@@ -29,6 +33,7 @@ defineProps({
   correctIndex: Number,
   clickCounts: Array as () => number[],
   disableVoteButtons: Boolean,
+  notStarted: Boolean,
 })
 
 // Define the event emitted
@@ -122,6 +127,15 @@ defineEmits(['select'])
 
 .shape-button.correct {
   color: #f7ecd8;
+}
+
+.shape-button.notStarted::before {
+  opacity: 0%;
+  /* background-color: rgb(119, 119, 119); */
+}
+.shape-button.notStarted {
+  opacity: 30%;
+  background-color: rgb(119, 119, 119);
 }
 /*
 .shape-button.correct::before {
