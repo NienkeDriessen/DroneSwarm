@@ -70,6 +70,7 @@
 
       <!-- Klaar Button -->
       <div class="complete-button-container">
+        <img src="@/assets/Group 24.svg" alt="Front view of drone cage" class="view-hint" />
         <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
@@ -630,13 +631,13 @@ const goBack = () => {
 
 .complete-button-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
+  gap: 1rem;
 }
 
 #complete-button {
-  background-color: #5cc987; /* Green background */
+  background-color: #41be96; /* Green background */
   color: white;
   font-size: 2rem;
   padding: 3rem 3rem;
@@ -647,7 +648,7 @@ const goBack = () => {
   min-width: 150px;
 }
 
-#complete-button: {
+#complete-button::after {
   background-color: #b6b6b6;
 }
 
@@ -698,5 +699,10 @@ const goBack = () => {
 }
 #points-mode-button {
   border-radius: 0 0 5px 5px;
+}
+
+.view-hint {
+  max-width: 15vw;
+  margin-bottom: 1rem;
 }
 </style>
