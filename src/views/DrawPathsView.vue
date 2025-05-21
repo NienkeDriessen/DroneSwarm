@@ -62,6 +62,7 @@
         :class="['grid-cell', cell.active ? 'active' : '']"
         :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
         @click="toggleCell(index)"
+        @touchend.prevent.stop="toggleCell(index)"
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
@@ -99,8 +100,8 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://145.94.179.2:3000/api/drones'
-const POLLING_INTERVAL = 50
+const DRONES_API_URL = 'http://192.168.1.147:3000/api/drones'
+const POLLING_INTERVAL = 25
 
 // Drones data, fetched periodically via axios.
 const drones = ref<Drone[]>([])
@@ -158,7 +159,7 @@ const cols = 18
 const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2
-const maxStepSize = 0.3
+const maxStepSize = 0.2
 const countdown_max = 30
 let countdown_value = countdown_max
 
@@ -416,7 +417,7 @@ const sendPathCoordinates = async () => {
   const availableDrones = drones.value.filter(d => d.available)
   const baseWaypoints  = waypoints.value.map(mapGridToReal)
   const SENDING_INTERVAL = 100    // ms between ticks
-  const DRONE_OFFSET     = 8      // tick lag per drone
+  const DRONE_OFFSET     = 15      // tick lag per drone
   let tick = 0
 
   const handle = window.setInterval(() => {
