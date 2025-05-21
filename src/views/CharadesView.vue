@@ -16,12 +16,13 @@
       :clickCounts="votes"
       :correctIndex="correctAnswerIndex"
       :disable="disableVoteButtons"
+      :notStarted="!started"
       @select="vote"
     />
 
     <p class="sub-title" v-if="message">{{ message }}</p>
-    <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" />
+    <!-- <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" /> -->
   </div>
 </template>
 
@@ -31,8 +32,8 @@ import { useRouter } from 'vue-router'
 import { groups, shapesData, type ShapeName } from '../assets/shapesData'
 import ShapeButtonGrid from '../components/CharadesButtonGrid.vue'
 import axios from 'axios'
-import DroneStatus from '../components/DroneStatus.vue'
-import DroneRadar3 from '../components/DroneRadar3.vue'
+// import DroneStatus from '../components/DroneStatus.vue'
+// import DroneRadar3 from '../components/DroneRadar3.vue'
 import Drone from '../models/Drone'
 
 const currentShapes = reactive<Shape[]>([])
@@ -45,7 +46,7 @@ let disableVoteButtons = true
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
-const uiDebug = false
+const uiDebug = true
 
 // Countdown timer
 const countdown = ref(0)
@@ -55,9 +56,9 @@ const votes = reactive<number[]>([])
 const numDrones = 3 // We have to get this in stead of being hardcoded
 const repeatCount = 5 // Repeat the shape path 10 times
 
-// const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
+const droneEndpoint = 'http://192.168.1.147:3000/api/drones'
 // const droneEndpoint = 'http://145.94.184.155:3000/api/drones'
-const droneEndpoint = 'http://145.94.132.220:3000/api/drones'
+// const droneEndpoint = 'http://145.94.132.220:3000/api/drones'
 const started = ref(false) // Track if countdown has started
 
 // Intervals
@@ -369,7 +370,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
 
   let stepIndex = 0
   // Send in an interval the positions of all drones at that timestamp
-  positionInterval = setInterval(async () => {
+  positionInterval = setInterval(() => {
     const updates = waypointsPerDrone.map((waypoints, index) => ({
       index,
       coordinate: waypoints[stepIndex] || waypoints[waypoints.length - 1],
@@ -409,7 +410,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
       console.log("Debug, 'sent' positions: " + droneDataArray)
     }
     stepIndex++
-  }, 100)
+  }, 500)
 }
 
 const createWaitingPositions = (numDrones: number) => {
@@ -452,10 +453,10 @@ const evaluateResults = () => {
     const chosenIndex = topChoices[0]
     isCorrect.value = chosenIndex === correctAnswerIndex.value
     message.value = isCorrect.value
-      ? 'Correct! Nieuwe vorm wordt geladen...'
+      ? "Correct! Klik op 'volgende'..."
       : 'Het goede antwoord was: ' +
         currentShapes[correctAnswerIndex.value].name +
-        '. Nieuwe vorm wordt geladen...'
+        ". Klik op 'volgende'..."
   }
   showCorrect = true
 
@@ -498,7 +499,7 @@ const goBack = () => router.back()
 .sub-title {
   color: #6f1d77;
   font-weight: 500;
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-family: 'Arial Narrow', Arial, sans-serif;
 }
 .charades-container {
@@ -517,7 +518,7 @@ const goBack = () => router.back()
   padding: 1rem 2rem;
   margin-left: 1vw;
   margin-top: 1vh;
-  font-size: 1rem;
+  font-size: 1.7rem;
   cursor: pointer;
   background-color: #6f1d77;
   color: #f7ecd8;
@@ -527,14 +528,15 @@ const goBack = () => router.back()
 }
 
 .start-button {
-  background-color: #6f1d77;
-  color: #f7ecd8;
-  font-size: 1.5rem;
+  background-color: #e85ff5;
+  color: #6f1d77;
+  font-size: 2rem;
   border: 3px solid #6f1d77;
   padding: 1em 1.5em;
   cursor: pointer;
   border-radius: 10px;
   transition: background-color 0.3s;
   font-family: 'Arial Narrow', Arial, sans-serif;
+  font-weight: 700;
 }
 </style>

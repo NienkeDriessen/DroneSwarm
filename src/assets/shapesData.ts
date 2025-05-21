@@ -1,9 +1,10 @@
 export type ShapeName = 'Lijn' | 'Driehoek' | 'Cirkel' | 'Vierkant' | 'Hart' | 'Druppel' | 'Maan'
 
 export const groups: ShapeName[][] = [
-  // ['Maan', 'Maan', 'Maan', 'Maan'], // Group 1
+  // ['Druppel', 'Druppel', 'Druppel', 'Druppel'], // Group 1
   ['Driehoek', 'Lijn', 'Cirkel', 'Vierkant'], // Group 1
   ['Driehoek', 'Druppel', 'Hart', 'Maan'], // Group 2
+  ['Druppel', 'Cirkel', 'Maan', 'Hart'], // Group 3
 ]
 
 const startPath = new URL('@/assets/charades_icons/', import.meta.url).href

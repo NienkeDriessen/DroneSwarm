@@ -25,45 +25,53 @@
       </div> -->
     </div>
     <!-- Grid container with overlay for lines -->
-    <div
-      class="grid-container"
-      @mousedown="startDrag"
-      @mouseup="endDrag"
-      @mouseleave="endDrag"
-      @mousemove="handleDrag"
-      @touchstart.prevent="startTouch"
-      @touchmove.prevent="handleTouch"
-      @touchend.prevent="endTouch"
-      @touchcancel.prevent="endTouch"
-      :style="{
-        gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
-        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
-        width: `${gridWidth}px`,
-        height: `${gridHeight}px`,
-      }"
-    >
-      <!-- Lines -->
-      <svg class="line-overlay" :width="gridWidth" :height="gridHeight">
-        <line
-          v-for="(segment, index) in lineSegments"
-          :key="index"
-          :x1="segment.start.x * (cellSize + gap) + cellSize / 2"
-          :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
-          :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
-          :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-          :stroke="segment.intersecting ? '#DB1F22' : '#6f1d77'"
-          stroke-width="8"
-        />
-      </svg>
-      <!-- Grid cells -->
+    <div class="grid-and-klaar-row">
+      <!-- Grid -->
       <div
-        v-for="(cell, index) in grid"
-        :key="index"
-        :class="['grid-cell', cell.active ? 'active' : '']"
-        :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
-        @click="toggleCell(index)"
-        :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
-      ></div>
+        class="grid-container"
+        @mousedown="startDrag"
+        @mouseup="endDrag"
+        @mouseleave="endDrag"
+        @mousemove="handleDrag"
+        @touchstart.prevent="startTouch"
+        @touchmove.prevent="handleTouch"
+        @touchend.prevent="endTouch"
+        @touchcancel.prevent="endTouch"
+        :style="{
+          gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
+          gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+          width: `${gridWidth}px`,
+          height: `${gridHeight}px`,
+        }"
+      >
+        <!-- Lines -->
+        <svg class="line-overlay" :width="gridWidth" :height="gridHeight">
+          <line
+            v-for="(segment, index) in lineSegments"
+            :key="index"
+            :x1="segment.start.x * (cellSize + gap) + cellSize / 2"
+            :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
+            :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
+            :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
+            :stroke="segment.intersecting ? '#DB1F22' : '#6f1d77'"
+            stroke-width="8"
+          />
+        </svg>
+        <!-- Grid cells -->
+        <div
+          v-for="(cell, index) in grid"
+          :key="index"
+          :class="['grid-cell', cell.active ? 'active' : '']"
+          :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
+          @click="toggleCell(index)"
+          :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
+        ></div>
+      </div>
+
+      <!-- Klaar Button -->
+      <div class="complete-button-container">
+        <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
+      </div>
     </div>
     <div v-if="notificationMessage" class="notification">
       {{ notificationMessage }}
@@ -73,11 +81,10 @@
       <div class="button-container">
         <button id="undo-button" @click="undo" class="control-button">Ongedaan maken</button>
         <button id="reset-button" @click="resetPath" class="control-button">Reset</button>
-        <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
-    <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" />
+    <!-- <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" /> -->
   </div>
 </template>
 
@@ -90,8 +97,8 @@ import {
   generateIntermediatePoints,
   type Coordinate,
 } from '../assets/GeometryTools'
-import DroneStatus from '../components/DroneStatus.vue'
-import DroneRadar3 from '../components/DroneRadar3.vue'
+// import DroneStatus from '../components/DroneStatus.vue'
+// import DroneRadar3 from '../components/DroneRadar3.vue'
 import Drone from '../models/Drone'
 
 enum Mode {
@@ -428,7 +435,7 @@ const sendPathCoordinates = async () => {
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX = 1.3 + dIndex * ((-3.2) / (availableDrones.length - 1))
+          standbyX = 1.3 + dIndex * (-3.2 / (availableDrones.length - 1))
         } else {
           standbyX = 1.25
         }
@@ -513,7 +520,7 @@ const goBack = () => {
 .sub-title {
   color: #6f1d77;
   font-weight: 500;
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-family: 'Arial Narrow', Arial, sans-serif;
   margin-top: 2vh;
 }
@@ -598,7 +605,7 @@ const goBack = () => {
   padding: 1rem 2rem;
   left: 3vw;
   top: 4vh;
-  font-size: 1rem;
+  font-size: 1.7rem;
   cursor: pointer;
   background-color: #6f1d77;
   color: #f7ecd8;
@@ -613,10 +620,35 @@ const goBack = () => {
   font-size: 1.7rem;
 }
 
+.grid-and-klaar-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-left: 20%;
+}
+
+.complete-button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
 #complete-button {
-  background-color: #6f1d77;
-  color: #f7ecd8;
-  font-size: 1.7rem;
+  background-color: #5cc987; /* Green background */
+  color: white;
+  font-size: 2rem;
+  padding: 3rem 3rem;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
+  min-width: 150px;
+}
+
+#complete-button: {
+  background-color: #b6b6b6;
 }
 
 #reset-button {
