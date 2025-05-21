@@ -71,7 +71,15 @@
       <!-- Klaar Button -->
       <div class="complete-button-container">
         <img src="@/assets/Group 24.svg" alt="Front view of drone cage" class="view-hint" />
-        <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
+        <button
+          id="complete-button"
+          @click="completePath"
+          class="control-button"
+          :disabled="isSendingPath"
+          :class="{ 'disabled-button': isSendingPath }"
+        >
+          Klaar!
+        </button>
       </div>
     </div>
     <div v-if="notificationMessage" class="notification">
@@ -107,7 +115,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://145.94.184.155:3000/api/drones'
+const DRONES_API_URL = 'http://192.168.1.147:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
@@ -187,6 +195,7 @@ const dronePoints = ref<{ point: Coordinate; drone_id: number }[]>([])
 
 const currentMode = ref<Mode>(Mode.PATH) // Default mode: draw path
 const isDragging = ref(false) // Interaction flag for drag events
+const isSendingPath = ref(false)
 
 const notificationMessage = ref<string | null>(null) // For showing temporary messages
 
@@ -337,7 +346,8 @@ const resetPath = () => {
   countdown_value = countdown_max - pathCoordinates.value.length
 }
 
-const completePath = () => {
+const completePath = async () => {
+  if (isSendingPath.value) return
   if (currentMode.value === Mode.PATH) {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
     // Handle intersection by asking user to undo or start from scratch
@@ -345,6 +355,7 @@ const completePath = () => {
       showNotification('Het pad mag niet overlappen.')
       return
     }
+    isSendingPath.value = true
     // Generate waypoints if no intersections
     waypoints.value = []
     for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
@@ -367,8 +378,9 @@ const completePath = () => {
     const realCoordinates = pathCoordinates.value.map(mapGridToReal)
     console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
-    sendPathCoordinates()
-    showNotification('Het pad wordt verzonden!')
+    await sendPathCoordinates() // Assuming this returns a Promise
+
+    showNotification('Pad succesvol verzonden!')
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
@@ -422,6 +434,7 @@ const sendPathCoordinates = async () => {
     // Ensure we run a few extra iterations so trailing drones can reach the end
     if (index >= mappedWaypoints.length + (availableDrones.length - 1) * DRONE_OFFSET) {
       clearInterval(intervalId)
+      isSendingPath.value = false
       return
     }
     // For each drone, calculate an offset based on its position in availableDrones.
@@ -641,7 +654,7 @@ const goBack = () => {
   color: white;
   font-size: 2rem;
   padding: 3rem 3rem;
-  border-radius: 12px;
+  border-radius: 10px 0px 10px 0px;
   border: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: background-color 0.3s ease;
@@ -704,5 +717,9 @@ const goBack = () => {
 .view-hint {
   max-width: 15vw;
   margin-bottom: 1rem;
+}
+.disabled-button {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>
