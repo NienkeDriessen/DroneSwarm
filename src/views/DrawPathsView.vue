@@ -61,7 +61,8 @@
         :key="index"
         :class="['grid-cell', cell.active ? 'active' : '']"
         :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
-        @click="toggleCell(index)"
+        @touchend.prevent="onCellTouchEnd(index)"
+        @click="onCellClick(index)"
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
@@ -179,6 +180,8 @@ const dronePoints = ref<{ point: Coordinate; drone_id: number }[]>([])
 
 const currentMode = ref<Mode>(Mode.PATH) // Default mode: draw path
 const isDragging = ref(false) // Interaction flag for drag events
+let touchStartPos: { x: number; y: number } | null = null
+const TOUCH_MOVE_THRESHOLD = 5 // pixels
 
 const notificationMessage = ref<string | null>(null) // For showing temporary messages
 
@@ -232,8 +235,16 @@ const getDroneId = (index: number) => {
 }
 
 // Mouse drag event handlers
-const startDrag = () => {
-  if (currentMode.value === Mode.PATH) isDragging.value = true
+const startDrag = (event: MouseEvent | TouchEvent) => {
+  if (currentMode.value !== Mode.PATH) return
+  if (event instanceof TouchEvent) {
+    const touch = event.touches[0]
+    touchStartPos = { x: touch.clientX, y: touch.clientY }
+  } else {
+    touchStartPos = { x: event.clientX, y: event.clientY }
+  }
+  // For mouse, you may immediately consider it dragging.
+  isDragging.value = event instanceof MouseEvent ? true : false
 }
 
 const endDrag = () => {
@@ -260,21 +271,47 @@ const handleDrag = (event: MouseEvent) => {
 
 // Touch event support
 const handleTouch = (event: TouchEvent) => {
-  if (!isDragging.value || currentMode.value !== Mode.PATH) return
+  if (currentMode.value !== Mode.PATH) return
+  if (!touchStartPos) return
+
   const touch = event.touches[0]
+  const dx = Math.abs(touch.clientX - touchStartPos.x)
+  const dy = Math.abs(touch.clientY - touchStartPos.y)
+  if (dx > TOUCH_MOVE_THRESHOLD || dy > TOUCH_MOVE_THRESHOLD) {
+    isDragging.value = true
+  }
+
   const gridContainer = (event.target as HTMLElement).closest('.grid-container')
   if (!gridContainer) return
   const rect = gridContainer.getBoundingClientRect()
-
-  // ← same fix here
   const xGrid = Math.floor((touch.clientX - rect.left) / (cellSize + gap))
   const yGrid = Math.floor((touch.clientY - rect.top)  / (cellSize + gap))
   const x = Math.min(Math.max(xGrid, 0), cols - 1)
   const y = Math.min(Math.max(yGrid, 0), rows - 1)
   const index = y * cols + x
-
+  // Allow drawing while dragging (if the cell isn't already active)
   if (!grid.value[index].active) {
     toggleCell(index)
+  }
+}
+
+const onCellTouchEnd = (i: number) => {
+  // Only treat as a tap if no significant movement occurred
+  if (isDragging.value) {
+    // Reset the flag and start pos
+    isDragging.value = false
+    touchStartPos = null
+    return
+  }
+  toggleCell(i)
+  // Reset the start position on tap end
+  touchStartPos = null
+}
+
+const onCellClick = (i: number) => {
+  // For mouse clicks we assume no dragging
+  if (!isDragging.value) {
+    toggleCell(i)
   }
 }
 
@@ -287,12 +324,23 @@ const toggleCell = (index: number) => {
         pathCoordinates.value.push(point)
         countdown_value = countdown_max - pathCoordinates.value.length
       }
+    } else {
+      // If already active, remove this point from the path and deactivate the cell
+      // Find the index of this point in pathCoordinates
+      const pathIdx = pathCoordinates.value.findIndex(
+        (p) => p.x === point.x && p.y === point.y
+      )
+      if (pathIdx !== pathCoordinates.value.length-1) {
+        pathCoordinates.value.splice(pathIdx, 1)
+        grid.value[index] = { active: false }
+        countdown_value = countdown_max - pathCoordinates.value.length
+      }
     }
   } else if (currentMode.value === Mode.POINTS) {
     const droneIndex = dronePoints.value.findIndex(
       (dp) => dp.point.x === point.x && dp.point.y === point.y,
     )
-    if (droneIndex !== -1) {
+    if (droneIndex !== pathCoordinates.value.length-1) {
       grid.value[index] = { active: false }
       dronePoints.value.splice(droneIndex, 1)
     } else {
@@ -545,6 +593,7 @@ const goBack = () => {
   cursor: pointer;
   transition: background-color 0.3s;
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 
 .grid-cell.active {
