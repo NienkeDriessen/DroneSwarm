@@ -76,8 +76,8 @@
         <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
-    <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" />
+    <!-- <DroneStatus :drones="drones" /> -->
+    <!-- <DroneRadar3 :drones="drones" /> -->
   </div>
 </template>
 
@@ -90,8 +90,8 @@ import {
   generateIntermediatePoints,
   type Coordinate,
 } from '../assets/GeometryTools'
-import DroneStatus from '../components/DroneStatus.vue'
-import DroneRadar3 from '../components/DroneRadar3.vue'
+// import DroneStatus from '../components/DroneStatus.vue'
+// import DroneRadar3 from '../components/DroneRadar3.vue'
 import Drone from '../models/Drone'
 
 enum Mode {
@@ -99,7 +99,8 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://145.94.184.155:3000/api/drones'
+// const DRONES_API_URL = 'http://145.94.184.155:3000/api/drones'
+const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.

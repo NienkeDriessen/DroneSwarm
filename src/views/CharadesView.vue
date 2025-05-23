@@ -20,8 +20,8 @@
     />
 
     <p class="sub-title" v-if="message">{{ message }}</p>
-    <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" />
+    <!-- <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" /> -->
   </div>
 </template>
 
@@ -31,8 +31,8 @@ import { useRouter } from 'vue-router'
 import { groups, shapesData, type ShapeName } from '../assets/shapesData'
 import ShapeButtonGrid from '../components/CharadesButtonGrid.vue'
 import axios from 'axios'
-import DroneStatus from '../components/DroneStatus.vue'
-import DroneRadar3 from '../components/DroneRadar3.vue'
+// import DroneStatus from '../components/DroneStatus.vue'
+// import DroneRadar3 from '../components/DroneRadar3.vue'
 import Drone from '../models/Drone'
 
 const currentShapes = reactive<Shape[]>([])
@@ -57,7 +57,9 @@ const repeatCount = 5 // Repeat the shape path 10 times
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 // const droneEndpoint = 'http://145.94.184.155:3000/api/drones'
-const droneEndpoint = 'http://145.94.132.220:3000/api/drones'
+// IP OF DEMO LAPTOP = 192.168.1.145/24
+// const DRONES_API_URL = 'http://145.94.184.155:3000/api/drones'
+const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
 const started = ref(false) // Track if countdown has started
 
 // Intervals
