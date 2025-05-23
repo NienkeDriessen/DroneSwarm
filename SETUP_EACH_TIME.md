@@ -53,17 +53,16 @@ Tap the **"fullscreen"** button to make it screen filling.
 
 # Laptop, drone software side:
 
-## 6. Start the Drone Backend Server
+## 6. Start the Drone Application (if not already started)
 
-🚧 **TODO**: Confirm the exact command or task to start the drone server.
+Start up the drone application like normal
 
-## 7. Run the Demo
-
-In the tablet app, tap "drone demo".
-
+Click in the interface on SC-Demo
 The drones will now listen for instructions from the app!
 
-# Shutdown
+# **Now everythong should be good to go!**
+
+## Shutdown
 
 Press Ctrl + C in the terminal(s) to stop all processes.
 
