@@ -46,7 +46,7 @@ let disableVoteButtons = true
 const message = ref('')
 // Track the current group index
 const currentGroupIndex = ref(0)
-const uiDebug = true
+const uiDebug = false
 
 // Countdown timer
 const countdown = ref(0)
@@ -56,9 +56,8 @@ const votes = reactive<number[]>([])
 const numDrones = 1 // We have to get this in stead of being hardcoded
 const repeatCount = 5 // Repeat the shape path 10 times
 
-const droneEndpoint = 'http://192.168.1.147:3000/api/drones'
-// const droneEndpoint = 'http://145.94.184.155:3000/api/drones'
-const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
+// const droneEndpoint = 'http://192.168.1.147:3000/api/drones'
+const droneEndpoint = 'http://145.94.147.224:3000/api/drones'
 const started = ref(false) // Track if countdown has started
 
 // Intervals
@@ -140,24 +139,24 @@ const originalBounds = {
   min_z: 0.0,
   max_z: 2.5,
 }
-//ABS_BOUNDS = ( (-1.45, 1.45), (-1.45, 1.45), (0.0, 2.1))
-// const newBounds = {
-//   min_x: -1.25,
-//   max_x: 1.25,
-//   min_y: -1.25,
-//   max_y: 1.25,
-//   min_z: 0.2,
-//   max_z: 1.9,
-// }
-
+// These bounds are for the smaller onTour setup
 const newBounds = {
-  min_x: -1.6,
-  max_x: 1.6,
-  min_y: -1.85,
-  max_y: 1.85,
-  min_z: 0.0,
-  max_z: 2.5,
+  min_x: -1.25,
+  max_x: 1.25,
+  min_y: -1.25,
+  max_y: 1.25,
+  min_z: 0.2,
+  max_z: 1.9,
 }
+// These bounds are for the larger cage at Science Center, uncomment if testing there
+// const newBounds = {
+//   min_x: -1.6,
+//   max_x: 1.6,
+//   min_y: -1.85,
+//   max_y: 1.85,
+//   min_z: 0.0,
+//   max_z: 2.5,
+// }
 
 const loadNewGroup = () => {
   // Currently we loop through all the groups
@@ -320,7 +319,7 @@ const createDroneArray = (
 
 // Send 3D shape path to drones in interval (for each drone it's position at the time index it is sent)
 const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) => {
-  const maxStepSize = 0.1
+  const maxStepSize = 0.2
   const waypoints: { pos_x: number; pos_y: number; pos_z: number }[] = []
 
   for (let i = 0; i < path.length - 1; i++) {
@@ -343,10 +342,6 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
     console.log('scaled waypoints:')
     console.log(scaled_waypoints)
   }
-
-  // if (path.length > 0) {
-  //   waypoints.push(path[path.length - 1])
-  // }
 
   const delay = Math.floor(scaled_waypoints.length / numDrones) // Delays for each drone in timestamps, its nr of waypoints / nr of drones
 
@@ -419,7 +414,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
       console.log("Debug, 'sent' positions: " + droneDataArray)
     }
     stepIndex++
-  }, 500)
+  }, 400)
 }
 
 const createWaitingPositions = (numDrones: number) => {

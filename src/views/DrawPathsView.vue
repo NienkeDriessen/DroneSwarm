@@ -115,7 +115,8 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
+// const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
+const DRONES_API_URL = 'http://145.94.147.224:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
@@ -405,12 +406,14 @@ const completePath = async () => {
 
 // ----- New function to map and send coordinates -----
 // These constants define the real-life space that your UI grid maps to.
-const REAL_ORIGIN = { y: 1.35, z: 0.15 } // Adjust origin as needed. Big
-// const REAL_ORIGIN = { y: 1.25, z: 0.0 } // Adjust origin as needed. small
-const REAL_WIDTH = 2.7 // Total width in real-life units. Big
-// const REAL_WIDTH = 2.7 // Total width in real-life units. small
-const REAL_HEIGHT = 2.35 // Total height in real-life units. Big
-// const REAL_HEIGHT = 2.0 // Total height in real-life units. small
+// const REAL_ORIGIN = { y: 1.35, z: 0.15 } // Adjust origin as needed. Big
+const REAL_ORIGIN = { y: 1.25, z: 0.15 } // Adjust origin as needed. small
+// const REAL_WIDTH = 2.7 // Total width in real-life units. Big
+const REAL_WIDTH = 2.5 // Total width in real-life units. small
+// const REAL_HEIGHT = 2.35 // Total height in real-life units. Big
+const REAL_HEIGHT = 2.0 // Total height in real-life units. small
+
+const TOTAL_DEPTH = 2.5
 const FIXED_X = 0.0 // Fixed third coordinate for 2D drawing.
 
 // Map a UI grid coordinate (with x,y) to real-life coordinates.
@@ -449,9 +452,9 @@ const sendPathCoordinates = async () => {
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX = 1.3 + dIndex * (-3.2 / (availableDrones.length - 1))
+          standbyX = TOTAL_DEPTH / 2 + dIndex * (-TOTAL_DEPTH / (availableDrones.length - 1))
         } else {
-          standbyX = 1.2
+          standbyX = TOTAL_DEPTH / 2
         }
         waypoint = { x: standbyX, y: finalWaypoint.y, z: finalWaypoint.z }
       } else {

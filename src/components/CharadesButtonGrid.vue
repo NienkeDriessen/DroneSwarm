@@ -137,25 +137,10 @@ defineEmits(['select'])
   opacity: 30%;
   background-color: rgb(119, 119, 119);
 }
-/*
-.shape-button.correct::before {
-  background-color: #009b77;
-}
-.shape-button.correct {
-  color: #f7ecd8;
-} */
 
 .shape-button:focus {
   -webkit-tap-highlight-color: transparent;
 }
-
-/* .shape-button.wrong::before {
-  background-color: #a40034;
-}
-
-.shape-button.wrong {
-  color: #f7ecd8;
-} */
 
 .count_nr {
   position: absolute;
