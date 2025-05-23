@@ -31,10 +31,10 @@
       @mouseup="endDrag"
       @mouseleave="endDrag"
       @mousemove="handleDrag"
-      @touchstart.prevent="startDrag"
+      @touchstart.prevent="startTouch"
       @touchmove.prevent="handleTouch"
-      @touchend.prevent="endDrag"
-      @touchcancel.prevent="endDrag"
+      @touchend.prevent="endTouch"
+      @touchcancel.prevent="endTouch"
       :style="{
         gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
@@ -62,7 +62,6 @@
         :class="['grid-cell', cell.active ? 'active' : '']"
         :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
         @click="toggleCell(index)"
-        @touchend.prevent.stop="toggleCell(index)"
         :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
       ></div>
     </div>
@@ -100,8 +99,8 @@ enum Mode {
   POINTS = 'points',
 }
 
-const DRONES_API_URL = 'http://192.168.1.147:3000/api/drones'
-const POLLING_INTERVAL = 25
+const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
+const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
 const drones = ref<Drone[]>([])
@@ -159,7 +158,7 @@ const cols = 18
 const maxGridWidth = 700
 const maxGridHeight = 500
 const gap = 2
-const maxStepSize = 0.2
+const maxStepSize = 0.3
 const countdown_max = 30
 let countdown_value = countdown_max
 
@@ -245,57 +244,48 @@ const handleDrag = (event: MouseEvent) => {
   if (!isDragging.value || currentMode.value !== Mode.PATH) return
   const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect()
   if (!rect) return
-
-  // ← replace dividing by cellSize with (cellSize + gap)
-  const xGrid = Math.floor((event.clientX - rect.left) / (cellSize + gap))
-  const yGrid = Math.floor((event.clientY - rect.top)  / (cellSize + gap))
-  // clamp into the grid
-  const x = Math.min(Math.max(xGrid, 0), cols - 1)
-  const y = Math.min(Math.max(yGrid, 0), rows - 1)
+  const x = Math.floor((event.clientX - rect.left) / cellSize)
+  const y = Math.floor((event.clientY - rect.top) / cellSize)
   const index = y * cols + x
-
-  if (!grid.value[index].active) {
+  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
     toggleCell(index)
   }
 }
 
-// Touch event support
+// New functions for touch event support
+const startTouch = () => {
+  if (currentMode.value === Mode.PATH) {
+    isDragging.value = true
+  }
+}
+
 const handleTouch = (event: TouchEvent) => {
   if (!isDragging.value || currentMode.value !== Mode.PATH) return
   const touch = event.touches[0]
   const gridContainer = (event.target as HTMLElement).closest('.grid-container')
   if (!gridContainer) return
   const rect = gridContainer.getBoundingClientRect()
-
-  // ← same fix here
-  const xGrid = Math.floor((touch.clientX - rect.left) / (cellSize + gap))
-  const yGrid = Math.floor((touch.clientY - rect.top)  / (cellSize + gap))
-  const x = Math.min(Math.max(xGrid, 0), cols - 1)
-  const y = Math.min(Math.max(yGrid, 0), rows - 1)
+  const x = Math.floor((touch.clientX - rect.left) / cellSize)
+  const y = Math.floor((touch.clientY - rect.top) / cellSize)
   const index = y * cols + x
-
-  if (!grid.value[index].active) {
+  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
     toggleCell(index)
   }
+}
+
+const endTouch = () => {
+  isDragging.value = false
 }
 
 const toggleCell = (index: number) => {
   const point = { x: index % cols, y: Math.floor(index / cols) }
   if (currentMode.value === Mode.PATH) {
-    const existingIdx = pathCoordinates.value.findIndex(
-      (p) => p.x === point.x && p.y === point.y
-    )
-    if (existingIdx >= 0) {
-      // remove just that point
-      pathCoordinates.value.splice(existingIdx, 1)
-      grid.value[index] = { active: false }
-      countdown_value = countdown_max - pathCoordinates.value.length
-    }
-    else if (pathCoordinates.value.length < countdown_max) {
-      // normal add‐point
-      grid.value[index] = { active: true }
-      pathCoordinates.value.push(point)
-      countdown_value = countdown_max - pathCoordinates.value.length
+    if (!grid.value[index].active) {
+      if (pathCoordinates.value.length < countdown_max) {
+        grid.value[index] = { active: true }
+        pathCoordinates.value.push(point)
+        countdown_value = countdown_max - pathCoordinates.value.length
+      }
     }
   } else if (currentMode.value === Mode.POINTS) {
     const droneIndex = dronePoints.value.findIndex(
@@ -414,92 +404,68 @@ function mapGridToReal(coord: Coordinate) {
 
 // Replace the existing sendPathCoordinates function with this version:
 const sendPathCoordinates = async () => {
-  const availableDrones = drones.value.filter(d => d.available)
-  const baseWaypoints  = waypoints.value.map(mapGridToReal)
-  const SENDING_INTERVAL = 100    // ms between ticks
-  const DRONE_OFFSET     = 15      // tick lag per drone
-  let tick = 0
+  const availableDrones = drones.value.filter((drone) => drone.available)
+  const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
+  const SENDING_INTERVAL = 100 // adjust sending rate (ms) as needed
+  const DRONE_OFFSET = 15// offset in waypoint steps between following drones
+  let index = 0
 
-  const handle = window.setInterval(() => {
-    // total ticks: 1 hover + prefix + baseWaypoints + 1 standby + offsets
-    const totalLength =
-      // we’ll compute prefix per‐drone below, so just overestimate:
-      1 +
-      Math.ceil( Math.hypot(
-        baseWaypoints[0].x - 0,
-        baseWaypoints[0].y - 0,
-        baseWaypoints[0].z - 0
-      ) / maxStepSize ) +
-      baseWaypoints.length +
-      1 +
-      (availableDrones.length - 1) * DRONE_OFFSET
-
-    if (tick >= totalLength) {
-      clearInterval(handle)
+  const intervalId = setInterval(() => {
+    // Ensure we run a few extra iterations so trailing drones can reach the end
+    if (index >= mappedWaypoints.length + (availableDrones.length - 1) * DRONE_OFFSET) {
+      clearInterval(intervalId)
       return
     }
-
+    // For each drone, calculate an offset based on its position in availableDrones.
     const updates = availableDrones.map((drone, dIndex) => {
-      // 1) hover at current real position
-
-      //easily note current positions of drones
-      const currReal = {
-        x: drone.position.x,
-        y: drone.position.y,
-        z: drone.position.z
+      const waypointIndex = index - dIndex * DRONE_OFFSET
+      let waypoint: { x: number; y: number; z: number }
+      if (waypointIndex < 0) {
+        // Before starting, hold on at the first waypoint.
+        waypoint = mappedWaypoints[0]
+      } else if (waypointIndex >= mappedWaypoints.length) {
+        // After finishing the drawn path, assign a standby point on a line in the x direction.
+        const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
+        let standbyX: number
+        if (availableDrones.length > 1) {
+          standbyX = 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
+        } else {
+          standbyX = 1.2
+        }
+        waypoint = { x: standbyX, y: finalWaypoint.y, z: finalWaypoint.z }
+      } else {
+        waypoint = mappedWaypoints[waypointIndex]
       }
-
-      // 2) build a prepend from currReal → first path waypoint
-      const firstReal = baseWaypoints[0]
-      const dx = firstReal.x - currReal.x
-      const dy = firstReal.y - currReal.y
-      const dz = firstReal.z - currReal.z
-      const dist = Math.hypot(dx, dy, dz)
-      const prefixSteps = Math.max(1, Math.ceil(dist / maxStepSize))
-      const prefixPoints = Array.from({ length: prefixSteps }, (_, i) => ({
-        x: currReal.x + dx * ((i + 1) / prefixSteps),
-        y: currReal.y + dy * ((i + 1) / prefixSteps),
-        z: currReal.z + dz * ((i + 1) / prefixSteps),
-      }))
-
-      // 3) compute standby‐line X
-      // hard-coded numbers are cause of margin from actual cage size
-      // TODO: parametrise margins
-      const last = baseWaypoints[baseWaypoints.length - 1]
-      const standbyX = availableDrones.length > 1
-        ? 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
-        : 1.2
-
-      // 4) full per‐drone waypoint list
-      const wpList = [
-        currReal, // start pos
-        ...prefixPoints,
-        ...baseWaypoints,
-        { x: standbyX, y: last.y, z: last.z },
-      ]
-
-      // 5) pick this drone’s current tick (with offset)
-      const localIdx = tick - dIndex * DRONE_OFFSET
-      const idx = Math.min(Math.max(localIdx, 0), wpList.length - 1)
-      const wp = wpList[idx]
-
-      // out packet is of same format as being sent
       return {
-        // drone id jic
         drone_id: drone.id,
-        //positions are what's important
-        pos_x: wp.x,
-        pos_y: wp.y,
-        pos_z: wp.z,
-        // We don't send velocities so let's keep em zero'ed
-        vel_x: 0,
-        vel_y: 0,
-        vel_z: 0,
+        pos_x: waypoint.x,
+        pos_y: waypoint.y,
+        pos_z: waypoint.z,
+        vel_x: 0.0,
+        vel_y: 0.0,
+        vel_z: 0.0,
       }
     })
 
-    axios.post(DRONES_API_URL, updates).catch(console.error)
-    tick++
+    axios
+      .post(DRONES_API_URL, updates, { timeout: 2000 })
+      .then((response) => {
+        console.log(response)
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log('SERVER ERROR')
+          console.log(error.response)
+        } else if (error.request) {
+          console.log('NETWORK ERROR: ' + error.message)
+          console.log(error.request)
+          console.log(error.toJSON())
+        } else {
+          console.log('ERROR', error.message)
+        }
+      })
+
+    index++
   }, SENDING_INTERVAL)
 }
 
@@ -577,7 +543,6 @@ const goBack = () => {
   border: 2px solid #ccacc9;
   cursor: pointer;
   transition: background-color 0.3s;
-  box-sizing: border-box;
 }
 
 .grid-cell.active {
