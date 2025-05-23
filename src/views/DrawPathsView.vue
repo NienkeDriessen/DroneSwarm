@@ -25,62 +25,46 @@
       </div> -->
     </div>
     <!-- Grid container with overlay for lines -->
-    <div class="grid-and-klaar-row">
-      <!-- Grid -->
-      <div
-        class="grid-container"
-        @mousedown="startDrag"
-        @mouseup="endDrag"
-        @mouseleave="endDrag"
-        @mousemove="handleDrag"
-        @touchstart.prevent="startTouch"
-        @touchmove.prevent="handleTouch"
-        @touchend.prevent="endTouch"
-        @touchcancel.prevent="endTouch"
-        :style="{
-          gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
-          gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
-          width: `${gridWidth}px`,
-          height: `${gridHeight}px`,
-        }"
-      >
-        <!-- Lines -->
-        <svg class="line-overlay" :width="gridWidth" :height="gridHeight">
-          <line
-            v-for="(segment, index) in lineSegments"
-            :key="index"
-            :x1="segment.start.x * (cellSize + gap) + cellSize / 2"
-            :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
-            :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
-            :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
-            :stroke="segment.intersecting ? '#DB1F22' : '#6f1d77'"
-            stroke-width="8"
-          />
-        </svg>
-        <!-- Grid cells -->
-        <div
-          v-for="(cell, index) in grid"
+    <div
+      class="grid-container"
+      @mousedown="startDrag"
+      @mouseup="endDrag"
+      @mouseleave="endDrag"
+      @mousemove="handleDrag"
+      @touchstart.prevent="startDrag"
+      @touchmove.prevent="handleTouch"
+      @touchend.prevent="endDrag"
+      @touchcancel.prevent="endDrag"
+      :style="{
+        gridTemplateColumns: `repeat(${cols}, ${cellSize}px)`,
+        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+        width: `${gridWidth}px`,
+        height: `${gridHeight}px`,
+      }"
+    >
+      <!-- Lines -->
+      <svg class="line-overlay" :width="gridWidth" :height="gridHeight">
+        <line
+          v-for="(segment, index) in lineSegments"
           :key="index"
-          :class="['grid-cell', cell.active ? 'active' : '']"
-          :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
-          @click="toggleCell(index)"
-          :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
-        ></div>
-      </div>
-
-      <!-- Klaar Button -->
-      <div class="complete-button-container">
-        <img src="@/assets/Group 24.svg" alt="Front view of drone cage" class="view-hint" />
-        <button
-          id="complete-button"
-          @click="completePath"
-          class="control-button"
-          :disabled="isSendingPath"
-          :class="{ 'disabled-button': isSendingPath }"
-        >
-          Klaar!
-        </button>
-      </div>
+          :x1="segment.start.x * (cellSize + gap) + cellSize / 2"
+          :y1="segment.start.y * (cellSize + gap) + cellSize / 2"
+          :x2="segment.end.x * (cellSize + gap) + cellSize / 2"
+          :y2="segment.end.y * (cellSize + gap) + cellSize / 2"
+          :stroke="segment.intersecting ? '#DB1F22' : '#6f1d77'"
+          stroke-width="8"
+        />
+      </svg>
+      <!-- Grid cells -->
+      <div
+        v-for="(cell, index) in grid"
+        :key="index"
+        :class="['grid-cell', cell.active ? 'active' : '']"
+        :data-drone-id="currentMode === Mode.POINTS ? getDroneId(index) : ''"
+        @touchend.prevent="onCellTouchEnd(index)"
+        @click="onCellClick(index)"
+        :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
+      ></div>
     </div>
     <div v-if="notificationMessage" class="notification">
       {{ notificationMessage }}
@@ -90,10 +74,11 @@
       <div class="button-container">
         <button id="undo-button" @click="undo" class="control-button">Ongedaan maken</button>
         <button id="reset-button" @click="resetPath" class="control-button">Reset</button>
+        <button id="complete-button" @click="completePath" class="control-button">Klaar!</button>
       </div>
     </div>
-    <!-- <DroneStatus :drones="drones" />
-    <DroneRadar3 :drones="drones" /> -->
+    <DroneStatus :drones="drones" />
+    <DroneRadar3 :drones="drones" />
   </div>
 </template>
 
@@ -106,8 +91,8 @@ import {
   generateIntermediatePoints,
   type Coordinate,
 } from '../assets/GeometryTools'
-// import DroneStatus from '../components/DroneStatus.vue'
-// import DroneRadar3 from '../components/DroneRadar3.vue'
+import DroneStatus from '../components/DroneStatus.vue'
+import DroneRadar3 from '../components/DroneRadar3.vue'
 import Drone from '../models/Drone'
 
 enum Mode {
@@ -115,8 +100,7 @@ enum Mode {
   POINTS = 'points',
 }
 
-// const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
-const DRONES_API_URL = 'http://145.94.147.224:3000/api/drones'
+const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
@@ -196,7 +180,8 @@ const dronePoints = ref<{ point: Coordinate; drone_id: number }[]>([])
 
 const currentMode = ref<Mode>(Mode.PATH) // Default mode: draw path
 const isDragging = ref(false) // Interaction flag for drag events
-const isSendingPath = ref(false)
+let touchStartPos: { x: number; y: number } | null = null
+const TOUCH_MOVE_THRESHOLD = 5 // pixels
 
 const notificationMessage = ref<string | null>(null) // For showing temporary messages
 
@@ -250,8 +235,16 @@ const getDroneId = (index: number) => {
 }
 
 // Mouse drag event handlers
-const startDrag = () => {
-  if (currentMode.value === Mode.PATH) isDragging.value = true
+const startDrag = (event: MouseEvent | TouchEvent) => {
+  if (currentMode.value !== Mode.PATH) return
+  if (event instanceof TouchEvent) {
+    const touch = event.touches[0]
+    touchStartPos = { x: touch.clientX, y: touch.clientY }
+  } else {
+    touchStartPos = { x: event.clientX, y: event.clientY }
+  }
+  // For mouse, you may immediately consider it dragging.
+  isDragging.value = event instanceof MouseEvent ? true : false
 }
 
 const endDrag = () => {
@@ -262,37 +255,64 @@ const handleDrag = (event: MouseEvent) => {
   if (!isDragging.value || currentMode.value !== Mode.PATH) return
   const rect = (event.target as HTMLElement).closest('.grid-container')?.getBoundingClientRect()
   if (!rect) return
-  const x = Math.floor((event.clientX - rect.left) / cellSize)
-  const y = Math.floor((event.clientY - rect.top) / cellSize)
+
+  // ← replace dividing by cellSize with (cellSize + gap)
+  const xGrid = Math.floor((event.clientX - rect.left) / (cellSize + gap))
+  const yGrid = Math.floor((event.clientY - rect.top)  / (cellSize + gap))
+  // clamp into the grid
+  const x = Math.min(Math.max(xGrid, 0), cols - 1)
+  const y = Math.min(Math.max(yGrid, 0), rows - 1)
   const index = y * cols + x
-  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
+
+  if (!grid.value[index].active) {
     toggleCell(index)
   }
 }
 
-// New functions for touch event support
-const startTouch = () => {
-  if (currentMode.value === Mode.PATH) {
+// Touch event support
+const handleTouch = (event: TouchEvent) => {
+  if (currentMode.value !== Mode.PATH) return
+  if (!touchStartPos) return
+
+  const touch = event.touches[0]
+  const dx = Math.abs(touch.clientX - touchStartPos.x)
+  const dy = Math.abs(touch.clientY - touchStartPos.y)
+  if (dx > TOUCH_MOVE_THRESHOLD || dy > TOUCH_MOVE_THRESHOLD) {
     isDragging.value = true
   }
-}
 
-const handleTouch = (event: TouchEvent) => {
-  if (!isDragging.value || currentMode.value !== Mode.PATH) return
-  const touch = event.touches[0]
   const gridContainer = (event.target as HTMLElement).closest('.grid-container')
   if (!gridContainer) return
   const rect = gridContainer.getBoundingClientRect()
-  const x = Math.floor((touch.clientX - rect.left) / cellSize)
-  const y = Math.floor((touch.clientY - rect.top) / cellSize)
+  const xGrid = Math.floor((touch.clientX - rect.left) / (cellSize + gap))
+  const yGrid = Math.floor((touch.clientY - rect.top)  / (cellSize + gap))
+  const x = Math.min(Math.max(xGrid, 0), cols - 1)
+  const y = Math.min(Math.max(yGrid, 0), rows - 1)
   const index = y * cols + x
-  if (x >= 0 && x < cols && y >= 0 && y < rows && !grid.value[index].active) {
+  // Allow drawing while dragging (if the cell isn't already active)
+  if (!grid.value[index].active) {
     toggleCell(index)
   }
 }
 
-const endTouch = () => {
-  isDragging.value = false
+const onCellTouchEnd = (i: number) => {
+  // Only treat as a tap if no significant movement occurred
+  if (isDragging.value) {
+    // Reset the flag and start pos
+    isDragging.value = false
+    touchStartPos = null
+    return
+  }
+  toggleCell(i)
+  // Reset the start position on tap end
+  touchStartPos = null
+}
+
+const onCellClick = (i: number) => {
+  // For mouse clicks we assume no dragging
+  if (!isDragging.value) {
+    toggleCell(i)
+  }
 }
 
 const toggleCell = (index: number) => {
@@ -304,12 +324,23 @@ const toggleCell = (index: number) => {
         pathCoordinates.value.push(point)
         countdown_value = countdown_max - pathCoordinates.value.length
       }
+    } else {
+      // If already active, remove this point from the path and deactivate the cell
+      // Find the index of this point in pathCoordinates
+      const pathIdx = pathCoordinates.value.findIndex(
+        (p) => p.x === point.x && p.y === point.y
+      )
+      if (pathIdx !== pathCoordinates.value.length-1) {
+        pathCoordinates.value.splice(pathIdx, 1)
+        grid.value[index] = { active: false }
+        countdown_value = countdown_max - pathCoordinates.value.length
+      }
     }
   } else if (currentMode.value === Mode.POINTS) {
     const droneIndex = dronePoints.value.findIndex(
       (dp) => dp.point.x === point.x && dp.point.y === point.y,
     )
-    if (droneIndex !== -1) {
+    if (droneIndex !== pathCoordinates.value.length-1) {
       grid.value[index] = { active: false }
       dronePoints.value.splice(droneIndex, 1)
     } else {
@@ -347,8 +378,7 @@ const resetPath = () => {
   countdown_value = countdown_max - pathCoordinates.value.length
 }
 
-const completePath = async () => {
-  if (isSendingPath.value) return
+const completePath = () => {
   if (currentMode.value === Mode.PATH) {
     const hasIntersections = lineSegments.value.some((segment) => segment.intersecting)
     // Handle intersection by asking user to undo or start from scratch
@@ -356,7 +386,6 @@ const completePath = async () => {
       showNotification('Het pad mag niet overlappen.')
       return
     }
-    isSendingPath.value = true
     // Generate waypoints if no intersections
     waypoints.value = []
     for (let i = 0; i < pathCoordinates.value.length - 1; i++) {
@@ -379,9 +408,8 @@ const completePath = async () => {
     const realCoordinates = pathCoordinates.value.map(mapGridToReal)
     console.log('Path completed with real-world coordinates:', realCoordinates)
     console.log('Path waypoints including intermediate points:', waypoints.value)
-    await sendPathCoordinates() // Assuming this returns a Promise
-
-    showNotification('Pad succesvol verzonden!')
+    sendPathCoordinates()
+    showNotification('Het pad wordt verzonden!')
   } else if (currentMode.value === Mode.POINTS) {
     // Validate points mode (ensure all points are within the drone limit)
     if (dronePoints.value.length > availableDronesCount.value) {
@@ -406,14 +434,12 @@ const completePath = async () => {
 
 // ----- New function to map and send coordinates -----
 // These constants define the real-life space that your UI grid maps to.
-// const REAL_ORIGIN = { y: 1.35, z: 0.15 } // Adjust origin as needed. Big
-const REAL_ORIGIN = { y: 1.25, z: 0.15 } // Adjust origin as needed. small
-// const REAL_WIDTH = 2.7 // Total width in real-life units. Big
-const REAL_WIDTH = 2.5 // Total width in real-life units. small
-// const REAL_HEIGHT = 2.35 // Total height in real-life units. Big
-const REAL_HEIGHT = 2.0 // Total height in real-life units. small
-
-const TOTAL_DEPTH = 2.5
+const REAL_ORIGIN = { y: 1.35, z: 0.15 } // Adjust origin as needed. Big
+// const REAL_ORIGIN = { y: 1.25, z: 0.0 } // Adjust origin as needed. small
+const REAL_WIDTH = 2.7 // Total width in real-life units. Big
+// const REAL_WIDTH = 2.7 // Total width in real-life units. small
+const REAL_HEIGHT = 2.35 // Total height in real-life units. Big
+// const REAL_HEIGHT = 2.0 // Total height in real-life units. small
 const FIXED_X = 0.0 // Fixed third coordinate for 2D drawing.
 
 // Map a UI grid coordinate (with x,y) to real-life coordinates.
@@ -430,14 +456,13 @@ const sendPathCoordinates = async () => {
   const availableDrones = drones.value.filter((drone) => drone.available)
   const mappedWaypoints = waypoints.value.map((wp) => mapGridToReal(wp))
   const SENDING_INTERVAL = 100 // adjust sending rate (ms) as needed
-  const DRONE_OFFSET = 15 // offset in waypoint steps between following drones
+  const DRONE_OFFSET = 15// offset in waypoint steps between following drones
   let index = 0
 
   const intervalId = setInterval(() => {
     // Ensure we run a few extra iterations so trailing drones can reach the end
     if (index >= mappedWaypoints.length + (availableDrones.length - 1) * DRONE_OFFSET) {
       clearInterval(intervalId)
-      isSendingPath.value = false
       return
     }
     // For each drone, calculate an offset based on its position in availableDrones.
@@ -452,9 +477,9 @@ const sendPathCoordinates = async () => {
         const finalWaypoint = mappedWaypoints[mappedWaypoints.length - 1]
         let standbyX: number
         if (availableDrones.length > 1) {
-          standbyX = TOTAL_DEPTH / 2 + dIndex * (-TOTAL_DEPTH / (availableDrones.length - 1))
+          standbyX = 1.2 + dIndex * ((-2.4) / (availableDrones.length - 1))
         } else {
-          standbyX = TOTAL_DEPTH / 2
+          standbyX = 1.2
         }
         waypoint = { x: standbyX, y: finalWaypoint.y, z: finalWaypoint.z }
       } else {
@@ -537,7 +562,7 @@ const goBack = () => {
 .sub-title {
   color: #6f1d77;
   font-weight: 500;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-family: 'Arial Narrow', Arial, sans-serif;
   margin-top: 2vh;
 }
@@ -567,6 +592,8 @@ const goBack = () => {
   border: 2px solid #ccacc9;
   cursor: pointer;
   transition: background-color 0.3s;
+  box-sizing: border-box;
+  touch-action: manipulation;
 }
 
 .grid-cell.active {
@@ -622,7 +649,7 @@ const goBack = () => {
   padding: 1rem 2rem;
   left: 3vw;
   top: 4vh;
-  font-size: 1.7rem;
+  font-size: 1rem;
   cursor: pointer;
   background-color: #6f1d77;
   color: #f7ecd8;
@@ -637,35 +664,10 @@ const goBack = () => {
   font-size: 1.7rem;
 }
 
-.grid-and-klaar-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  margin-left: 20%;
-}
-
-.complete-button-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
 #complete-button {
-  background-color: #41be96; /* Green background */
-  color: white;
-  font-size: 2rem;
-  padding: 3rem 3rem;
-  border-radius: 10px 0px 10px 0px;
-  border: none;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease;
-  min-width: 150px;
-}
-
-#complete-button::after {
-  background-color: #b6b6b6;
+  background-color: #6f1d77;
+  color: #f7ecd8;
+  font-size: 1.7rem;
 }
 
 #reset-button {
@@ -715,14 +717,5 @@ const goBack = () => {
 }
 #points-mode-button {
   border-radius: 0 0 5px 5px;
-}
-
-.view-hint {
-  max-width: 15vw;
-  margin-bottom: 1rem;
-}
-.disabled-button {
-  opacity: 0.5;
-  pointer-events: none;
 }
 </style>
