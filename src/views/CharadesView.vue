@@ -271,7 +271,7 @@ const startCountdown = () => {
       if (positionInterval) clearInterval(positionInterval) // Kill position sending
       evaluateResults()
     }
-  }, 1000)
+  }, 1000) as unknown as number
 }
 
 // Helper function for generating intermediate points between two defined points in the shape data
@@ -414,7 +414,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
       console.log("Debug, 'sent' positions: " + droneDataArray)
     }
     stepIndex++
-  }, 400)
+  }, 400) as unknown as number
 }
 
 const createWaitingPositions = (numDrones: number) => {
