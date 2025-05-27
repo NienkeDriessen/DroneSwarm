@@ -101,7 +101,7 @@ enum Mode {
 }
 
 // const DRONES_API_URL = 'http://145.94.184.155:3000/api/drones'
-const DRONES_API_URL = 'http://192.168.1.143:3000/api/drones'
+const DRONES_API_URL = 'http://192.168.1.145:3000/api/drones'
 const POLLING_INTERVAL = 50
 
 // Drones data, fetched periodically via axios.
