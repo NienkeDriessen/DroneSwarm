@@ -36,8 +36,11 @@ You're done! You only need to do this setup once per machine.
 
 # If a new application host laptop is used
 We use a router (which doesn't need internet access), to host our application over Local Area Network (LAN). Thus all devices (main swarming lab laptop, this app's host laptop, interfacing tablets/laptops, etc.) must first be connected to the router. It is shown below.
+
 <img src="docs/assets/20250523_104216.jpg" alt="Router for the demo" width="500"/>
+
 You can connect to the router via the credentials listed on the back of the router, seen below.
+
 <p align="center">
 <img src="docs/assets/20250523_104227.jpg" alt="Router credentials" width="400" style="transform:rotate(270deg);"/>
 </p>
