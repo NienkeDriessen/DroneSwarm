@@ -1,9 +1,10 @@
 export type ShapeName = 'Lijn' | 'Driehoek' | 'Cirkel' | 'Vierkant' | 'Hart' | 'Druppel' | 'Maan'
 
 export const groups: ShapeName[][] = [
-  // ['Maan', 'Maan', 'Maan', 'Maan'], // Group 1
+  // ['Druppel', 'Druppel', 'Druppel', 'Druppel'], // Group 1
   ['Driehoek', 'Lijn', 'Cirkel', 'Vierkant'], // Group 1
   ['Driehoek', 'Druppel', 'Hart', 'Maan'], // Group 2
+  ['Druppel', 'Cirkel', 'Maan', 'Hart'], // Group 3
 ]
 
 const startPath = new URL('@/assets/charades_icons/', import.meta.url).href
@@ -14,19 +15,19 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
     image: startPath + '/Lijn.svg',
     path: [
       [0, 0, 1.5],
-      [0, -1, 1.5],
+      [0, -1.35, 1.5],
       [0, 0, 1.5],
-      [0, 1, 1.5],
+      [0, 1.35, 1.5],
       [0, 0, 1.5],
     ],
   },
   Driehoek: {
     image: startPath + '/Driehoek.svg',
     path: [
-      [0, 1, 0.3],
+      [0, 1.35, 0.3],
       [0, 0, 1.9],
-      [0, -1, 0.3],
-      [0, 1, 0.3],
+      [0, -1.35, 0.3],
+      [0, 1.35, 0.3],
     ],
   },
   Cirkel: {
@@ -52,10 +53,10 @@ export const shapesData: Record<ShapeName, { image: string; path: number[][] }> 
   Vierkant: {
     image: startPath + '/Vierkant.svg',
     path: [
-      [0, -0.85, 1.875],
-      [0, -0.85, 0.625],
-      [1, 0.85, 0.625],
-      [1, 0.85, 1.875],
+      [0, -1.2, 1.825],
+      [0, -1.2, 0.625],
+      [0, 1.2, 0.625],
+      [0, 1.2, 1.825],
     ],
   },
   Hart: {

@@ -16,6 +16,7 @@
       :clickCounts="votes"
       :correctIndex="correctAnswerIndex"
       :disable="disableVoteButtons"
+      :notStarted="!started"
       @select="vote"
     />
 
@@ -52,7 +53,7 @@ const countdown = ref(0)
 const countdown_value = 30 // Start countdown from x seconds
 // Store votes for each button
 const votes = reactive<number[]>([])
-const numDrones = 3 // We have to get this in stead of being hardcoded
+const numDrones = 1 // We have to get this in stead of being hardcoded
 const repeatCount = 5 // Repeat the shape path 10 times
 
 // const droneEndpoint = 'http://192.168.1.143:3000/api/drones'
@@ -141,7 +142,7 @@ const originalBounds = {
   min_z: 0.0,
   max_z: 2.5,
 }
-//ABS_BOUNDS = ( (-1.45, 1.45), (-1.45, 1.45), (0.0, 2.1))
+// These bounds are for the smaller onTour setup
 const newBounds = {
   min_x: -1.25,
   max_x: 1.25,
@@ -150,6 +151,15 @@ const newBounds = {
   min_z: 0.2,
   max_z: 1.9,
 }
+// These bounds are for the larger cage at Science Center, uncomment if testing there
+// const newBounds = {
+//   min_x: -1.6,
+//   max_x: 1.6,
+//   min_y: -1.85,
+//   max_y: 1.85,
+//   min_z: 0.0,
+//   max_z: 2.5,
+// }
 
 const loadNewGroup = () => {
   // Currently we loop through all the groups
@@ -264,7 +274,7 @@ const startCountdown = () => {
       if (positionInterval) clearInterval(positionInterval) // Kill position sending
       evaluateResults()
     }
-  }, 1000)
+  }, 1000) as unknown as number
 }
 
 // Helper function for generating intermediate points between two defined points in the shape data
@@ -336,10 +346,6 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
     console.log(scaled_waypoints)
   }
 
-  // if (path.length > 0) {
-  //   waypoints.push(path[path.length - 1])
-  // }
-
   const delay = Math.floor(scaled_waypoints.length / numDrones) // Delays for each drone in timestamps, its nr of waypoints / nr of drones
 
   // We need to create for each drone a waiting position. Maybe just
@@ -371,7 +377,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
 
   let stepIndex = 0
   // Send in an interval the positions of all drones at that timestamp
-  positionInterval = setInterval(async () => {
+  positionInterval = setInterval(() => {
     const updates = waypointsPerDrone.map((waypoints, index) => ({
       index,
       coordinate: waypoints[stepIndex] || waypoints[waypoints.length - 1],
@@ -411,7 +417,7 @@ const sendShapePath = (path: { pos_x: number; pos_y: number; pos_z: number }[]) 
       console.log("Debug, 'sent' positions: " + droneDataArray)
     }
     stepIndex++
-  }, 100)
+  }, 400) as unknown as number
 }
 
 const createWaitingPositions = (numDrones: number) => {
@@ -454,10 +460,10 @@ const evaluateResults = () => {
     const chosenIndex = topChoices[0]
     isCorrect.value = chosenIndex === correctAnswerIndex.value
     message.value = isCorrect.value
-      ? 'Correct! Nieuwe vorm wordt geladen...'
+      ? "Correct! Klik op 'volgende'..."
       : 'Het goede antwoord was: ' +
         currentShapes[correctAnswerIndex.value].name +
-        '. Nieuwe vorm wordt geladen...'
+        ". Klik op 'volgende'..."
   }
   showCorrect = true
 
@@ -500,7 +506,7 @@ const goBack = () => router.back()
 .sub-title {
   color: #6f1d77;
   font-weight: 500;
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-family: 'Arial Narrow', Arial, sans-serif;
 }
 .charades-container {
@@ -519,7 +525,7 @@ const goBack = () => router.back()
   padding: 1rem 2rem;
   margin-left: 1vw;
   margin-top: 1vh;
-  font-size: 1rem;
+  font-size: 1.7rem;
   cursor: pointer;
   background-color: #6f1d77;
   color: #f7ecd8;
@@ -529,14 +535,15 @@ const goBack = () => router.back()
 }
 
 .start-button {
-  background-color: #6f1d77;
-  color: #f7ecd8;
-  font-size: 1.5rem;
+  background-color: #e85ff5;
+  color: #6f1d77;
+  font-size: 2rem;
   border: 3px solid #6f1d77;
   padding: 1em 1.5em;
   cursor: pointer;
   border-radius: 10px;
   transition: background-color 0.3s;
   font-family: 'Arial Narrow', Arial, sans-serif;
+  font-weight: 700;
 }
 </style>

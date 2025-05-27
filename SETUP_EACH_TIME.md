@@ -4,46 +4,37 @@ Follow these steps **each time you set up at a presentation location**.
 
 ---
 
-# First on the Laptop:
+## First on the Laptop:
 
-## 1. Turn On the Wi-Fi Router
+### 1. Turn On the Wi-Fi Router
 
 - Plug in and turn on the Wi-Fi router.
 - Wait a few seconds for it to start broadcasting.
 
 ---
 
-## 2. Connect Laptop to Router
+### 2. Connect Laptop to Router
 
 - Connect the laptop to one of the following Wi-Fi networks (doesn't matter which one):
   - Linksys00023
   - Linksys00023_5GHz
 - Either the network is recognised, or use the password on the back. You can also press the WPS button on the router to connect automatically.
 
-## 3. Get the Laptop's IP Address
+### 3. Start the Frontend App
 
-1. Open the Start menu.
-2. Search for **"cmd"** and press Enter.
-3. In the command prompt, type:
+Open a terminal by selecting the following icon:
+<img src="src\assets\image.png" alt="alt text" width="100"/>
+In the terminal, paste the following command by right clicking and selecting paste (ctrl+v does not work), or just type it.
 
 ```bash
-
-ipconfig
+./run_app.sh
 ```
 
-Look for the "IPv4 Address" under your Wi-Fi adapter (usually something like 192.168.0.x).
+This will start the application and now we can connect the tablet.
 
-**Copy** this address.
+## Tablet:
 
-## 4. Start the Frontend App
-
-In the terminal, start the frontend (replace this with the exact command used). **TODO**
-
-When prompted, paste in the IP address from Step 3.
-
-# Tablet:
-
-## 5. Connect the Tablet
+### 4. Connect the Tablet
 
 After turning on the tablet, connect it to the same Wi-Fi network as the laptop.
 
@@ -51,20 +42,30 @@ On the homescreen, tap the **"drone demo app"** icon.
 
 Tap the **"fullscreen"** button to make it screen filling.
 
-# Laptop, drone software side:
+## Laptop, drone software side:
 
-## 6. Start the Drone Backend Server
+### 6. Start the Drone Application (if not already started)
 
-🚧 **TODO**: Confirm the exact command or task to start the drone server.
+Start up the drone application like normal
 
-## 7. Run the Demo
-
-In the tablet app, tap "drone demo".
-
+Click in the interface on SC-Demo
 The drones will now listen for instructions from the app!
+
+## **Now everythong should be good to go!**
+
+---
 
 # Shutdown
 
 Press Ctrl + C in the terminal(s) to stop all processes.
 
 Power off the router and pack up.
+
+---
+
+# Some bugs that can occur and how to fix them:
+
+- **Sometimes the icons dissappear on the tablet.**
+  On the laptop, go to the terminal in which you started the frontend (which you started with _npm run dev -- --host_). If you type _'r'_ and press enter the server reloads, and the images should be back!
+
+![alt text](src\assets\bug_image.png)
