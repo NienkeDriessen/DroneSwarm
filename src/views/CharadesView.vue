@@ -56,8 +56,8 @@ const votes = reactive<number[]>([])
 const numDrones = 1 // We have to get this in stead of being hardcoded
 const repeatCount = 5 // Repeat the shape path 10 times
 
-// const droneEndpoint = 'http://192.168.1.147:3000/api/drones'
-const droneEndpoint = 'http://145.94.147.224:3000/api/drones'
+const droneEndpoint = 'http://192.168.1.145:3000/api/drones'
+// const droneEndpoint = 'http://145.94.147.224:3000/api/drones'
 const started = ref(false) // Track if countdown has started
 
 // Intervals
