@@ -4,7 +4,9 @@ Follow these steps **each time you set up at a presentation location**.
 
 ---
 
-## First on the Laptop:
+## First, on the Laptop, while being charged:
+
+__Make sure the laptop is charged__
 
 ### 1. Turn On the Wi-Fi Router
 
@@ -22,9 +24,17 @@ Follow these steps **each time you set up at a presentation location**.
 
 ### 3. Start the Frontend App
 
-Open a terminal by selecting the following icon:
-<img src="src\assets\image.png" alt="alt text" width="100"/>
-In the terminal, paste the following command by right clicking and selecting paste (ctrl+v does not work), or just type it.
+Open a terminal by selecting the following icon on the left toolbar:
+
+<img src="src\assets\terminal_image.png" alt="alt text" width="75"/>
+
+In the terminal, paste the below command by right clicking and selecting paste (ctrl+v does not work), or just type it to navigate to the main command's directory
+
+```bash
+cd Desktop/
+```
+
+Then in the terminal again, paste/type this below to run the app
 
 ```bash
 ./run_app.sh
@@ -33,8 +43,10 @@ In the terminal, paste the following command by right clicking and selecting pas
 This will start the application and now we can connect the tablet.
 
 ## Tablet:
+__Make sure the tablet charged__
 
 ### 4. Connect the Tablet
+
 
 After turning on the tablet, connect it to the same Wi-Fi network as the laptop.
 
@@ -51,9 +63,9 @@ Start up the drone application like normal
 Click in the interface on SC-Demo
 The drones will now listen for instructions from the app!
 
-## **Now everythong should be good to go!**
+## **Now everything should be good to go!**
 
----
+
 
 # Shutdown
 
@@ -61,9 +73,11 @@ Press Ctrl + C in the terminal(s) to stop all processes.
 
 Power off the router and pack up.
 
+Switch off both the tablet and the laptop.Set them to charge, so that it is ready to be used for the next time! :)
+
 ---
 
-# Some bugs that can occur and how to fix them:
+## Some bugs that can occur and how to fix them:
 
 - **Sometimes the icons dissappear on the tablet.**
   On the laptop, go to the terminal in which you started the frontend (which you started with _npm run dev -- --host_). If you type _'r'_ and press enter the server reloads, and the images should be back!
